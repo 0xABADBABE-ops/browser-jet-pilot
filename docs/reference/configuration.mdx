@@ -1,0 +1,131 @@
+---
+title: "Configuration"
+description: "CLI flags and environment variables for runtime mode, transport, authentication, and viewport behavior."
+keywords: ["configuration", "environment variables", "cli flags", "cdp", "api key"]
+---
+
+## Runtime modes
+
+- `LAUNCH=true`: launch a managed Chromium instance through Playwright
+- `LAUNCH=false`: connect to an existing browser through `CDP_URL`
+
+## Environment variables
+
+### Browser configuration
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `CDP_URL` | `http://localhost:9222` | CDP endpoint when not launching locally |
+| `LAUNCH` | `false` | Whether to launch a browser (`true`) or connect (`false`) |
+| `BROWSER_WIDTH` | `1280` | Browser viewport width |
+| `BROWSER_HEIGHT` | `720` | Browser viewport height |
+| `PORT` | unset | Enables HTTP mode when provided |
+| `HOST` | `localhost` | Bind address for HTTP mode |
+
+### Authentication
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `API_KEY` | unset | API key for HTTP endpoint authentication (optional) |
+
+## CLI flags
+
+| Flag | Env equivalent |
+| --- | --- |
+| `--port <n>` | `PORT` |
+| `--host <host>` | `HOST` |
+| `--cdp-url <url>` | `CDP_URL` |
+| `--launch` | `LAUNCH=true` |
+| `--browser-width <n>` | `BROWSER_WIDTH` |
+| `--browser-height <n>` | `BROWSER_HEIGHT` |
+
+## Example `.env`
+
+```bash
+# Browser configuration
+CDP_URL=http://localhost:9222
+LAUNCH=false
+BROWSER_WIDTH=1280
+BROWSER_HEIGHT=720
+
+# Server configuration
+PORT=3100
+HOST=0.0.0.0
+
+# Authentication (optional)
+API_KEY=your-secret-api-key
+```
+
+## Authentication (HTTP mode)
+
+When running in HTTP mode, you can optionally enable API key authentication.
+
+### Enable API key authentication
+
+```bash
+# Via environment variable
+export API_KEY=your-secret-key
+node dist/index.js --port 3100
+
+# Via .env file
+API_KEY=your-secret-key
+node dist/index.js --port 3100
+```
+
+### Provide the API key
+
+Clients can authenticate using either method:
+
+**HTTP Header (recommended):**
+```
+X-API-Key: your-secret-key
+```
+
+**Query Parameter:**
+```
+http://localhost:3100/mcp?apiKey=your-secret-key
+```
+
+### Authentication behavior
+
+- The `initialize` request (MCP session establishment) is exempt from authentication when no session exists
+- All subsequent requests require a valid API key
+- Constant-time comparison prevents timing attacks
+- Response: `401 Unauthorized` for invalid or missing keys
+
+## Operational notes
+
+- In containerized setups, `HOST=0.0.0.0` is usually required
+- Keep `LAUNCH=true` for self-contained Docker operation
+- Keep `LAUNCH=false` when you already run hardened browser infrastructure
+- Set `API_KEY` in production environments for security
+
+## AI / Agent configuration
+
+BrowserAgent supports optional LLM providers for autonomous workflows.
+
+| Variable / Flag | Default | Description |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | unset | OpenAI API key |
+| `ANTHROPIC_API_KEY` | unset | Anthropic API key |
+| `--ai-provider` | `openai` | Select `openai` or `anthropic` |
+| `--ai-model` | `gpt-4o` | Model name |
+| `--ai-base-url` | provider default | Custom API endpoint |
+| `--ai-api-key` | from env | API key override |
+| `--max-steps` | `30` | Safety limit per task |
+
+Example usage:
+
+```bash
+OPENAI_API_KEY=sk-... npm run agent -- --server-url http://localhost:3100/mcp \
+  --ai-provider openai --ai-model gpt-4o "Summarize example.com"
+```
+
+## Security considerations
+
+- Keep `API_KEY` out of source control
+- Use environment variables or CI secrets
+- Enable TLS in production for HTTP mode
+- Restrict network access with firewalls
+- Use strong, randomly generated API keys
+

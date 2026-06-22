@@ -1,0 +1,31 @@
+---
+title: "Architecture"
+description: "System architecture for MCP Browser Server, BrowserAgent, BrowserSkill, and MCP clients."
+keywords: ["architecture", "mermaid", "mcp", "playwright", "cdp"]
+---
+
+## System flow
+
+```mermaid
+flowchart LR
+  subgraph App["Your Application"]
+    BS["BrowserSkill"]
+    BA["BrowserAgent (AI)"]
+    MC["MCP Client<br/>(Claude Desktop, Cursor, etc.)"]
+  end
+
+  BS -->|MCP JSON-RPC| MB["MCP Browser Server<br/>(stdio or HTTP)"]
+  BA -->|MCP JSON-RPC| MB
+  MC -->|MCP JSON-RPC| MB
+
+  MB --> PW["Playwright"]
+  PW -->|CDP| CH["Your Chromium / Chrome"]
+```
+
+## Notes
+
+- `BrowserSkill` is the stable integration layer for framework-driven execution.
+- `BrowserAgent` adds optional LLM planning on top of deterministic tools.
+- Any MCP-compatible client can call the same tool surface through `/mcp` (HTTP) or stdio.
+- Browser control always resolves to Playwright + CDP, so runtime behavior is consistent across integration modes.
+

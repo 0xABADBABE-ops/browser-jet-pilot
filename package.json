@@ -1,0 +1,75 @@
+{
+  "name": "browser-jet-pilot",
+  "version": "1.0.1",
+  "description": "Self-hosted MCP server for AI browser automation. Drop-in @browserbasehq/mcp alternative.",
+  "author": "0xabadbabe <violet.purple@awhisper.org>",
+  "email": "violet.purple@awhisper.org",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "browser-jet-pilot": "dist/index.js",
+    "bjp-agent": "dist/agent/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./agent": "./dist/agent/index.js",
+    "./skill": "./dist/skill/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "agent": "tsx src/agent/cli.ts",
+    "agent:seq": "tsx src/agent/cli.ts --server-url http://localhost:3100/mcp --sequence",
+    "reliability:check": "bash scripts/reliability-check.sh",
+    "docs:dev": "cd docs && mint dev",
+    "docs:validate": "cd docs && mint validate",
+    "docs:links": "cd docs && mint broken-links",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:ui": "vitest --ui",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^15.0.0",
+    "dotenv": "^17.4.2",
+    "playwright": "^1.61.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/ui": "^4.1.9",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "mint": "^4.2.216",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

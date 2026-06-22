@@ -1,0 +1,59 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "aspen",
+  "name": "Browser Jet Pilot",
+  "description": "Self-hosted MCP server for AI browser automation. Drop-in @browserbasehq/mcp alternative.",
+  "colors": {
+    "primary": "#7C3AED",
+    "light": "#9F67FF",
+    "dark": "#6D28D9"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#09090B"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "windsurf",
+      "cursor"
+    ],
+    "display": "header"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Overview",
+        "pages": ["index"]
+      },
+      {
+        "group": "Getting Started",
+        "pages": ["getting-started/installation", "getting-started/quickstart", "getting-started/docker"]
+      },
+      {
+        "group": "Guides",
+        "pages": ["guides/agent-and-skill", "guides/reliability-checks"]
+      },
+      {
+        "group": "Reference",
+        "pages": ["reference/architecture", "reference/configuration", "reference/http-endpoints", "reference/tools"]
+      },
+      {
+        "group": "Development",
+        "pages": ["development/testing", "development/linting", "development/contributing"]
+      }
+    ]
+  },
+  "footer": {
+    "text": "design, written and coded solely by head and &lt;3 for you - 0xabadbabe (Sudo Qt - jet'aime)"
+  }
+}

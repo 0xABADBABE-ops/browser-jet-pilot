@@ -1,0 +1,192 @@
+{
+  "name": "browser",
+  "version": "1.0.0",
+  "description": "Self-hosted browser automation via Browser Jet Pilot. Connects to your own Chromium instance through CDP — no third-party browser services needed. Use when the user needs to navigate websites, fill forms, take screenshots, extract web content, or automate any browser task.",
+  "triggerPatterns": [
+    "browse",
+    "navigate",
+    "screenshot",
+    "web page",
+    "website",
+    "click",
+    "fill form",
+    "scrape",
+    "extract from page",
+    "browser",
+    "open url",
+    "go to",
+    "visit",
+    "web automation",
+    "page content",
+    "check website",
+    "search on"
+  ],
+  "config": {
+    "serverUrl": "http://localhost:3100/mcp",
+    "serverCommand": "node",
+    "serverArgs": ["./dist/index.js"],
+    "cdpUrl": "http://localhost:9222",
+    "launch": false,
+    "aiProvider": "openai",
+    "aiModel": "gpt-4o",
+    "maxSteps": 30,
+    "saveScreenshots": true,
+    "screenshotDir": "./screenshots"
+  },
+  "tools": {
+    "available": [
+      "browser_start",
+      "browser_end",
+      "browser_navigate",
+      "browser_get_info",
+      "browser_screenshot",
+      "browser_click",
+      "browser_fill",
+      "browser_type",
+      "browser_select",
+      "browser_hover",
+      "browser_scroll",
+      "browser_evaluate",
+      "browser_get_content",
+      "browser_wait_for",
+      "browser_new_tab",
+      "browser_list_tabs",
+      "browser_switch_tab",
+      "browser_disable_shaders",
+      "browser_restore_shaders"
+    ],
+    "categories": {
+      "session": {
+        "tools": ["browser_start", "browser_end"],
+        "note": "ALWAYS call browser_start before any other tool. Call browser_end when done."
+      },
+      "navigation": {
+        "tools": ["browser_navigate", "browser_get_info"],
+        "note": "Use browser_navigate to go to URLs. Use browser_get_info to check current state."
+      },
+      "observation": {
+        "tools": [
+          "browser_screenshot",
+          "browser_get_content",
+          "browser_evaluate",
+          "browser_wait_for"
+        ],
+        "note": "Observe before acting. Use browser_get_content for text, browser_screenshot for visuals, browser_evaluate for JS, browser_wait_for for dynamic content."
+      },
+      "interaction": {
+        "tools": [
+          "browser_click",
+          "browser_fill",
+          "browser_type",
+          "browser_select",
+          "browser_hover",
+          "browser_scroll"
+        ],
+        "note": "Prefer browser_fill for forms. Use browser_type only when keystroke events are needed. Always wait for elements before interacting."
+      },
+      "tabs": {
+        "tools": ["browser_new_tab", "browser_list_tabs", "browser_switch_tab"],
+        "note": "Manage multiple browser tabs."
+      },
+      "shader": {
+        "tools": ["browser_disable_shaders", "browser_restore_shaders"],
+        "note": "Use browser_disable_shaders before navigating to heavy WebGL/shader pages. Blocks WebGL, freezes CSS animations, throttles requestAnimationFrame."
+      }
+    }
+  },
+  "guidelines": {
+    "always": [
+      "Call browser_start as the first step in every browser session",
+      "Use browser_get_content or browser_screenshot to observe the page before taking action",
+      "Use browser_wait_for when pages load content dynamically (SPAs, lazy loading)",
+      "Handle errors gracefully — try alternative selectors or wait longer if a tool fails",
+      "Save important screenshots to the user when visual verification is relevant"
+    ],
+    "prefer": [
+      "browser_fill over browser_type for form inputs (faster and more reliable)",
+      "browser_get_content over browser_screenshot for text extraction",
+      "browser_evaluate for extracting structured data (JSON, arrays, tables)",
+      "CSS selectors over XPath (simpler and more readable)"
+    ],
+    "avoid": [
+      "Clicking elements without first verifying they exist via browser_get_content or browser_wait_for",
+      "Calling browser_navigate without a complete, valid URL",
+      "More than 5 scroll steps in a row (use browser_evaluate to jump to sections instead)",
+      "Relying on screenshots to read text content — use browser_get_content instead"
+    ],
+    "data_extraction": [
+      "For tables/lists: use browser_evaluate with Array.from(document.querySelectorAll(...)).map(...)",
+      "For single values: use browser_get_content with a CSS selector to scope the extraction",
+      "For paginated content: scroll, extract, click next, repeat — track items to avoid duplicates",
+      "For JSON data in pages: use browser_evaluate to find and parse <script> tags or API responses"
+    ]
+  },
+  "examples": [
+    {
+      "task": "Go to a website and extract its title",
+      "steps": [
+        "browser_start",
+        "browser_navigate(url='https://example.com')",
+        "browser_get_info",
+        "browser_end"
+      ]
+    },
+    {
+      "task": "Fill out a login form",
+      "steps": [
+        "browser_start",
+        "browser_navigate(url='https://example.com/login')",
+        "browser_wait_for(selector='#email')",
+        "browser_fill(selector='#email', value='user@example.com')",
+        "browser_fill(selector='#password', value='pass123')",
+        "browser_click(selector='button[type=submit]')",
+        "browser_wait_for(selector='.dashboard')",
+        "browser_screenshot"
+      ]
+    },
+    {
+      "task": "Extract all links from a page",
+      "steps": [
+        "browser_start",
+        "browser_navigate(url='https://example.com')",
+        "browser_evaluate(script='Array.from(document.querySelectorAll(\"a\")).map(a => ({text: a.innerText, href: a.href}))')",
+        "browser_end"
+      ]
+    },
+    {
+      "task": "Monitor a page for changes",
+      "steps": [
+        "browser_start",
+        "browser_navigate(url='https://example.com')",
+        "browser_get_content(selector='.price')",
+        "browser_screenshot",
+        "browser_end",
+        "(Schedule repeat check at interval)"
+      ]
+    },
+    {
+      "task": "Multi-tab research",
+      "steps": [
+        "browser_start",
+        "browser_navigate(url='https://start.gg')",
+        "browser_screenshot",
+        "browser_new_tab(url='https://twitter.com')",
+        "browser_get_content",
+        "browser_switch_tab(index=0)",
+        "browser_screenshot"
+      ]
+    }
+  ],
+  "errorRecovery": {
+    "element_not_found": "Try browser_get_content to see what's actually on the page. The DOM structure may differ from expected. Try broader selectors or browser_evaluate to find the correct selector.",
+    "timeout": "The page may be slow. Increase browser_wait_for timeout to 30000ms. For SPA navigation, wait for specific elements rather than relying on navigate completion.",
+    "navigation_failed": "Check the URL is valid and complete (include https://). If the site blocks automated browsers, try browser_evaluate to check for CAPTCHAs or blocks.",
+    "session_lost": "Call browser_start again to reconnect. If the CDP connection dropped, check that the Chromium process is still running with --remote-debugging-port=9222."
+  },
+  "output": {
+    "text": "Return extracted text content, page titles, form data, and any structured data as formatted text.",
+    "screenshots": "Save screenshots as PNG files. Provide the file path to the user. Use base64 data from browser_screenshot tool results.",
+    "data": "For structured extraction (tables, lists, JSON), format as clean JSON or markdown tables.",
+    "reports": "For multi-step research tasks, compile results into a summary with supporting screenshots and extracted data."
+  }
+}

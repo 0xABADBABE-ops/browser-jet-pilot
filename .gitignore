@@ -1,0 +1,73 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+lib/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files (do not commit secrets)
+.env
+.env.local
+.env.test
+.env.*.local
+!.env.example
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Playwright / test artifacts
+.playwright/
+playwright-report/
+node_modules/.cache/ms-playwright
+test-results/
+reports/
+screenshots/
+
+# Cache & temp
+.cache/
+tmp/
+temp/
+*.tmp
+.tmp*
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.local
+*.swp
+*~
+*.pid
+*.seed
+
+# Docker
+docker-compose.override.yml
+.docker
+
+# Qwen / AI agent local config
+.qwen/
+
+# Reasonix / AI agent local config
+.reasonix/
+
+# Development scripts & tooling (local only)
+.scripts/
+.tools/

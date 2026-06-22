@@ -1,0 +1,108 @@
+---
+title: "Docker deployment"
+description: "Build and run MCP Browser Server in Docker with health checks and launch/CDP modes."
+keywords: ["docker", "compose", "deployment", "healthcheck", "cdp"]
+---
+
+## Quick start with Docker Compose
+
+```bash
+docker compose up -d --build
+docker compose ps
+curl http://localhost:3100/healthz
+```
+
+Expected state:
+
+- Service is `healthy`
+- MCP endpoint: `http://localhost:3100/mcp`
+- Health endpoint returns JSON with `status: ok`
+
+## Run without Compose
+
+```bash
+docker build -t mcp-browser-server:local .
+docker run --rm -p 3100:3100 --shm-size=1g \
+  -e PORT=3100 -e HOST=0.0.0.0 -e LAUNCH=true \
+  mcp-browser-server:local
+```
+
+## Connect to external Chromium
+
+Use this when you already have a browser process you want to control.
+
+```bash
+docker run --rm -p 3100:3100 --shm-size=1g \
+  -e PORT=3100 -e HOST=0.0.0.0 -e LAUNCH=false \
+  -e CDP_URL=http://host.docker.internal:9222 \
+  mcp-browser-server:local
+```
+
+If you are on Linux and `host.docker.internal` is unavailable, add:
+
+```bash
+--add-host=host.docker.internal:host-gateway
+```
+
+## Stop
+
+```bash
+docker compose down
+```
+
+## Troubleshooting
+
+### Playwright installation failures
+
+If the container fails to start due to missing browser binaries:
+
+- **Build cache**: Clear Docker build cache and rebuild:
+  ```bash
+  docker compose build --no-cache
+  ```
+- **Network issues**: Ensure the container can reach the Playwright CDN during build
+- **Platform mismatch**: Verify the Dockerfile matches your host architecture (amd64/arm64)
+
+### Permission issues
+
+If you encounter permission errors:
+
+- **Linux hosts**: Containers may run as root by default. Add a non-root user if needed:
+  ```bash
+  docker run --user "$(id -u):$(id -g)" ...
+  ```
+- **Volume mounts**: Ensure mounted directories have appropriate permissions for the container user
+- **TMPDIR issues**: If Chromium can't write temp files, mount a tmpfs:
+  ```bash
+  docker run --tmpfs /tmp ...
+  ```
+
+### host.docker.internal unavailable
+
+If `host.docker.internal` doesn't resolve (common on Linux):
+
+- **Add host alias**: Use `--add-host=host.docker.internal:host-gateway` as shown above
+- **Use network mode**: For Docker Compose, add to your service:
+  ```yaml
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  ```
+- **Alternative**: Use your host's actual IP address instead of `host.docker.internal`
+
+### Container health check failures
+
+If the container shows as "unhealthy":
+
+- **Check logs**: Run `docker compose logs` to see startup errors
+- **Port binding**: Ensure port 3100 isn't already in use on the host
+- **Memory limits**: Increase `--shm-size` if Chromium crashes due to insufficient shared memory
+- **Timeouts**: The healthcheck allows 30s for startup. Increase if your system is slower
+
+### Volume mount issues
+
+If volume mounts don't work as expected:
+
+- **Path syntax**: Use absolute paths or paths relative to the compose file location
+- **Windows paths**: Use forward slashes or escaped backslashes in YAML
+- **Permission errors**: On Windows, ensure Docker Desktop has file sharing enabled for the drive
+- **Build context**: For COPY/ADD in Dockerfile, paths are relative to the build context, not the compose file

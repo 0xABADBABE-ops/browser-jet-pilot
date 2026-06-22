@@ -1,0 +1,7 @@
+dist/
+node_modules/
+.qwen/
+.reasonix/
+docs/
+coverage/
+*.log

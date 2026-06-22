@@ -1,0 +1,106 @@
+---
+title: "Linting and Formatting"
+description: "Code quality tools: ESLint, Prettier, and pre-commit hooks for consistent code style."
+keywords: ["linting", "eslint", "prettier", "formatting", "code quality"]
+---
+
+## ESLint
+
+The project uses ESLint with TypeScript support for code quality and consistency.
+
+### Run linting
+
+```bash
+# Check for issues
+npm run lint
+
+# Auto-fix issues where possible
+npm run lint:fix
+```
+
+### ESLint configuration
+
+ESLint is configured in `eslint.config.js` with:
+- TypeScript parser
+- Prettier integration
+- Import sorting
+- Recommended rules for Node.js and TypeScript
+
+## Prettier
+
+Prettier handles code formatting for consistent style across the codebase.
+
+### Format code
+
+```bash
+# Format all files
+npm run format
+
+# Check formatting without modifying
+npm run format:check
+```
+
+### Prettier configuration
+
+Prettier is configured in `.prettierrc.json`:
+- Single quotes
+- No trailing commas
+- 2-space indentation
+- 100 character line width
+
+Files to ignore are listed in `.prettierignore`.
+
+## Pre-commit hooks
+
+Husky and lint-staged automatically run linting and formatting on staged files before each commit.
+
+### What runs on commit
+
+When you commit, these tools run on staged files:
+- ESLint with auto-fix
+- Prettier formatting
+
+### Manual hook installation
+
+If hooks aren't working, reinstall Husky:
+
+```bash
+npm run prepare
+```
+
+## Files covered
+
+Pre-commit hooks process:
+- TypeScript/TSX files: ESLint + Prettier
+- JSON, Markdown, YAML: Prettier only
+
+## CI validation
+
+The CI workflow validates linting and formatting on every push and pull request. Build will fail if linting errors are present.
+
+## Recommended workflow
+
+1. Write code
+2. Run `npm run lint:fix` to auto-fix issues
+3. Run `npm run format` to ensure consistent formatting
+4. Commit (hooks run additional checks)
+5. Push (CI validates everything again)
+
+## Editor integration
+
+Most editors support ESLint and Prettier integration:
+- VSCode: Install ESLint and Prettier extensions
+- The project includes recommended configurations for workspace settings
+
+## Troubleshooting
+
+If lint-staged isn't working:
+
+```bash
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+
+# Reinstall Husky
+npm run prepare
+```

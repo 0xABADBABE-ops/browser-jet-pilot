@@ -1,0 +1,46 @@
+---
+title: "MCP Browser Server"
+description: "Self-hosted MCP browser automation for teams that want reliable control without hosted browser vendors."
+keywords: ["mcp", "playwright", "browser automation", "cdp", "self-hosted"]
+---
+
+Introduction
+
+MCP Browser Server provides programmatic, reliable control of Chromium browsers. It exposes a compact MCP JSON-RPC toolset—navigation, interaction, extraction, and screenshots—that runs on Playwright and the Chrome DevTools Protocol (CDP). It can connect to an existing browser via CDP or launch a managed browser for isolated runs.
+
+If you are replacing hosted browser tooling, the key difference is simple: this server runs on your infrastructure, connects to your browser, and exposes stable tool calls that agent frameworks can trust.
+
+## What you get
+
+- Local or remote browser control through CDP
+- HTTP MCP endpoint (`/mcp`) for service-style deployments
+- Deterministic tools for navigation, interaction, extraction, and screenshots
+- Optional AI orchestration through `BrowserAgent`
+- Framework-friendly wrapper through `BrowserSkill`
+
+## Typical workflow
+
+1. Start the server (`stdio` or HTTP mode)
+2. Call `browser_start`
+3. Run tool calls (`browser_navigate`, `browser_click`, `browser_get_content`, etc.)
+4. Close with `browser_end`
+
+## Real output from this project
+
+The screenshot below was produced by this repository's own tool flow (`browser_start` → `browser_navigate` → `browser_screenshot`).
+
+![Example Domain captured through MCP Browser Server](/images/browser-example-domain-page.png)
+
+## Where to go next
+
+- Start quickly: [/getting-started/quickstart](/getting-started/quickstart)
+- Run in Docker: [/getting-started/docker](/getting-started/docker)
+- Learn BrowserAgent and BrowserSkill: [/guides/agent-and-skill](/guides/agent-and-skill)
+- View architecture page: [/reference/architecture](/reference/architecture)
+
+## Conclusion
+
+MCP Browser Server is focused on predictable, production-ready browser automation. Validate your setup with the Quickstart and the bundled reliability checks. For CI, prefer deterministic sequences; for application integration, use the BrowserSkill or the agent CLI. Keep API keys and other secrets out of source control and manage browser endpoints through environment variables.
+
+
+design, written and coded solely by head and &lt;3 for you - 0xabadbabe (Sudo Qt - jet'aime)

@@ -1,0 +1,127 @@
+---
+title: "HTTP Endpoints"
+description: "Service endpoints exposed in HTTP mode, including MCP transport, health checks, and authentication."
+keywords: ["http endpoints", "mcp", "healthz", "authentication", "api"]
+---
+
+When `PORT` is set (or `--port` is passed), the server exposes HTTP endpoints.
+
+## `POST /mcp`
+
+Primary MCP transport endpoint using Streamable HTTP sessions.
+
+### Authentication
+
+When `API_KEY` is set, requests must include authentication:
+
+**Via HTTP Header (recommended):**
+```
+X-API-Key: your-secret-key
+```
+
+**Via Query Parameter:**
+```
+/mcp?apiKey=your-secret-key
+```
+
+**Note:** The `initialize` request (session establishment) is exempt from authentication when no session exists.
+
+### Usage
+
+- Use through MCP clients (SDK clients, BrowserAgent, framework integrations)
+- Session lifecycle is managed through MCP session headers
+- Supports MCP JSON-RPC protocol for tool calls
+
+## `GET /healthz`
+
+Lightweight health endpoint for container and platform probes.
+
+### Response
+
+```json
+{
+  "status": "ok",
+  "service": "mcp-browser-server",
+  "transport": "http"
+}
+```
+
+### Authentication
+
+The health endpoint does not require authentication (for container orchestrators and probes).
+
+## `GET /`
+
+Root endpoint returns basic service information.
+
+### Response
+
+```json
+{
+  "name": "MCP Browser Server",
+  "version": "1.2.0",
+  "transport": "http"
+}
+```
+
+## Status behavior
+
+- `200 OK` for healthy service on `/healthz` and `/`
+- `401 Unauthorized` for invalid or missing API keys (when authentication is enabled)
+- `404 Not Found` for unknown routes
+- MCP JSON-RPC error payloads for malformed `/mcp` requests
+
+## Error responses
+
+### Authentication error (401)
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid or missing API key"
+}
+```
+
+### MCP protocol error
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32600,
+    "message": "Invalid Request"
+  }
+}
+```
+
+## Recommended probe usage
+
+- **Docker Compose healthcheck:** Use `/healthz`
+- **Kubernetes probes:** Use `/healthz`
+- **Synthetic checks:** Run deterministic MCP tool sequence instead of just health checks
+
+## Example using curl
+
+```bash
+# Health check
+curl http://localhost:3100/healthz
+
+# With authentication
+curl -H "X-API-Key: your-secret-key" http://localhost:3100/healthz
+
+# MCP endpoint (requires MCP client)
+curl -X POST http://localhost:3100/mcp \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-secret-key" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}'
+```
+
+## Transport modes comparison
+
+| Feature | Stdio mode | HTTP mode |
+| --- | --- | --- |
+| Endpoint | Standard input/output | `http://host:port/mcp` |
+| Authentication | Process-level | Optional API key |
+| Use case | Claude Desktop, local clients | Remote services, containers |
+| Health checks | N/A | `/healthz` endpoint |

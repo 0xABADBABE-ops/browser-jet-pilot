@@ -1,0 +1,102 @@
+---
+title: "Installation"
+description: "Install and build MCP Browser Server from source or npm."
+keywords: ["installation", "setup", "build", "dependencies"]
+---
+
+## Prerequisites
+
+- Node.js 18 or higher
+- npm (comes with Node.js)
+- For CDP mode: Chromium with remote debugging enabled
+- For launch mode: Playwright browser binaries
+
+## Install from npm
+
+```bash
+npm install mcp-browser-server
+```
+
+## Install from source
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/0xABADBABE-ops/mcp-browser-server.git
+cd mcp-browser-server
+npm install
+```
+
+## Build
+
+Build TypeScript to JavaScript:
+
+```bash
+npm run build
+```
+
+This compiles the source from `src/` to `dist/` and prepares the project for execution.
+
+## Playwright browsers (launch mode)
+
+When using `LAUNCH=true`, Playwright needs browser binaries installed:
+
+```bash
+npx playwright install chromium
+```
+
+## Verify installation
+
+Run the built server:
+
+```bash
+# Stdio mode
+node dist/index.js
+
+# HTTP mode
+node dist/index.js --port 3100 --host 0.0.0.0
+```
+
+## Claude Desktop configuration
+
+For Claude Desktop integration, add to your `claude_desktop_config.json`:
+
+**Config file locations by platform:**
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "browser": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-browser-server/dist/index.js"],
+      "env": {
+        "CDP_URL": "http://localhost:9222"
+      }
+    }
+  }
+}
+```
+
+## Binaries
+
+After building, the package provides two binaries:
+
+- `mcp-browser` - Main MCP server
+- `browser-agent` - BrowserAgent CLI
+
+These are available globally if you install with `npm install -g` or locally via `npm run agent`.
+
+## Development dependencies
+
+The project includes several development tools:
+
+- **typescript**: TypeScript compiler
+- **vitest**: Testing framework with UI mode
+- **eslint**: Linting
+- **prettier**: Code formatting
+- **husky + lint-staged**: Pre-commit hooks
+
+All are installed automatically via `npm install`.

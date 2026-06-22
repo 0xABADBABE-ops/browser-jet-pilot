@@ -1,0 +1,148 @@
+---
+title: "Contributing"
+description: "How to contribute to MCP Browser Server including development workflow and guidelines."
+keywords: ["contributing", "pull requests", "development workflow", "guidelines"]
+---
+
+## Getting started
+
+1. Fork the repository on GitHub
+2. Clone your fork locally
+3. Install dependencies: `npm install`
+4. Create a branch: `git checkout -b feature/your-feature-name`
+
+## Development workflow
+
+### Make changes
+
+Edit source files in `src/` and add tests alongside your code.
+
+### Build and test
+
+```bash
+# Build TypeScript
+npm run build
+
+# Run tests
+npm test
+
+# Run linting
+npm run lint
+
+# Check formatting
+npm run format:check
+```
+
+### Test your changes
+
+```bash
+# Run the MCP server
+node dist/index.js
+
+# Or use the agent CLI
+npm run agent -- "your test task"
+```
+
+### Commit
+
+Pre-commit hooks will run ESLint and Prettier on staged files.
+
+```bash
+git add .
+git commit -m "feat: add your feature description"
+```
+
+### Push and create PR
+
+Push to your fork and create a pull request to the main branch.
+
+## Pull request guidelines
+
+### Title format
+
+Use conventional commit format:
+
+- `feat:` for new features
+- `fix:` for bug fixes
+- `docs:` for documentation changes
+- `test:` for test changes
+- `chore:` for maintenance tasks
+
+### Description
+
+Include:
+- What changed and why
+- How to test
+- Any breaking changes
+- Related issues
+
+## What gets checked in CI
+
+All pull requests run through CI which validates:
+- TypeScript build
+- Type checking
+- Linting
+- Tests
+- Security audit
+- Documentation
+- Docker build
+- Reliability checks
+
+## Code style
+
+- Follow existing patterns in the codebase
+- Use TypeScript for type safety
+- Add JSDoc comments for public APIs
+- Keep functions focused and small
+- Use Zod schemas for input validation
+
+## Adding new tools
+
+When adding a new MCP tool:
+
+1. Add the tool registration in `src/tools/index.ts`
+2. Include Zod schema for input validation
+3. Add tests in `src/tools/__tests__/`
+4. Update documentation in `docs/reference/tools.mdx`
+5. Add examples if applicable
+
+## Documentation
+
+Documentation lives in `docs/` using Mintlify format:
+
+- Update reference docs for API changes
+- Add guides for new features
+- Keep `docs.json` navigation current
+- Validate docs: `npm run docs:validate`
+
+## Testing
+
+- Write tests for new features
+- Aim for high coverage on critical paths
+- Include both unit and integration tests
+- Test error cases and edge conditions
+
+## Security
+
+If your changes affect security:
+- Review `SECURITY.md`
+- Consider input validation implications
+- Check for sensitive data exposure
+- Document any new security considerations
+
+## Getting help
+
+- Open an issue for questions
+- Check existing issues and PRs
+- Review the codebase for patterns
+- Run existing tests to understand behavior
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the MIT License.
+
+## Recognition
+
+Contributors are recognized in the project. Your work helps make self-hosted browser automation more accessible.
+
+Thank you for contributing!

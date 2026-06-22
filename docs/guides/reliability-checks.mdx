@@ -1,0 +1,62 @@
+---
+title: "Reliability checks"
+description: "A practical checklist to verify transport, browser lifecycle, and extraction behavior before production use."
+keywords: ["reliability", "smoke tests", "health checks", "qa"]
+---
+
+If you are preparing this service for real agent workloads, run these checks in order.
+
+## Fast path: run the bundled check script
+
+```bash
+npm run reliability:check
+```
+
+Custom server URL:
+
+```bash
+npm run reliability:check -- http://localhost:3100/mcp
+```
+
+## 1) Process and transport health
+
+```bash
+curl http://localhost:3100/healthz
+```
+
+Expected response:
+
+```json
+{"status":"ok","service":"mcp-browser-server","transport":"http"}
+```
+
+## 2) Session lifecycle integrity
+
+```bash
+npm run agent -- --server-url http://localhost:3100/mcp --sequence \
+  browser_start browser_get_info browser_end
+```
+
+You should see a valid `sessionId`, then a clean close message.
+
+## 3) Navigation and content extraction
+
+```bash
+npm run agent -- --server-url http://localhost:3100/mcp --sequence \
+  browser_start "browser_navigate?url=https://example.com" \
+  "browser_get_content?selector=body&type=text" browser_end
+```
+
+This confirms the server can read meaningful page text, not just render a screenshot.
+
+## 4) Visual assertion example
+
+Use element-level screenshots to verify selectors and page state.
+
+![Example Domain heading captured as element screenshot](/images/browser-example-domain-h1.png)
+
+## 5) Failure behavior worth testing
+
+- Stop the target CDP browser while `LAUNCH=false` and confirm your monitoring catches failures.
+- Provide an invalid selector and verify the error is explicit.
+- Re-run the same deterministic flow repeatedly to detect flaky selectors.

@@ -1,0 +1,484 @@
+---
+title: "Tools"
+description: "Complete MCP tool catalog for browser sessions, navigation, interaction, extraction, and tabs."
+keywords: ["tool reference", "mcp tools", "browser_start", "browser_screenshot", "browser_disable_shaders", "browser_restore_shaders"]
+---
+
+Every browser workflow starts with `browser_start` and ends with `browser_end`.
+
+## Session
+
+### browser_start
+
+Start or reuse a browser session. Must be called before any other browser tools. Reuses existing session if still alive.
+
+**Parameters:** None
+
+**Returns:**
+```json
+{
+  "sessionId": "string",
+  "message": "Browser launched or Connected to <url>"
+}
+```
+
+**Errors:** None
+
+**Example:**
+```bash
+browser_start
+```
+
+### browser_end
+
+Close the active browser session and release resources.
+
+**Parameters:** None
+
+**Returns:**
+```json
+"Session <id> closed."
+```
+
+**Errors:**
+- No active session (returns `"No active session to close."` instead of error)
+
+**Example:**
+```bash
+browser_end
+```
+
+## Navigation and page state
+
+### browser_navigate
+
+Navigate the browser to a URL. Waits for the page to reach `domcontentloaded` state.
+
+**Parameters:**
+- `url` (string, required): The URL to navigate to
+
+**Returns:**
+```json
+{
+  "url": "https://example.com",
+  "title": "Example Domain"
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Navigation timeout after 30 seconds
+
+**Example:**
+```bash
+browser_navigate?url=https://example.com
+```
+
+### browser_get_info
+
+Get current page metadata including URL, title, and viewport size.
+
+**Parameters:** None
+
+**Returns:**
+```json
+{
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "viewport": { "width": 1280, "height": 720 }
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+
+**Example:**
+```bash
+browser_get_info
+```
+
+### browser_wait_for
+
+Wait for an element to reach a specific state before proceeding. Useful for dynamic content loading, spinners, or async UI updates.
+
+**Parameters:**
+- `selector` (string, required): CSS selector to wait for
+- `state` (string, optional): Element state to wait for (default: `"visible"`)
+  - `"attached"` - Element is present in the DOM (may not be visible)
+  - `"visible"` - Element is in DOM and visible to the user
+  - `"hidden"` - Element is either hidden or removed from DOM
+- `timeout` (number, optional): Maximum wait time in milliseconds (default: 10000)
+
+**Returns:**
+```json
+"<selector> is now <state>."
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Timeout exceeded before element reached target state
+
+**Example:**
+```bash
+browser_wait_for?selector=.loading&state=hidden&timeout=5000
+```
+
+## Interaction
+
+### browser_click
+
+Click an element on the page.
+
+**Parameters:**
+- `selector` (string, required): CSS selector of the element to click
+
+**Returns:**
+```json
+"Clicked: button.submit"
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found (timeout after 10 seconds)
+- Element is obscured and not clickable
+
+**Example:**
+```bash
+browser_click?selector=button[type="submit"]
+```
+
+### browser_fill
+
+Clear and fill an input field directly. Does not trigger keyboard events. Use this for fast form filling without simulating keystrokes.
+
+**Parameters:**
+- `selector` (string, required): CSS selector of the input field
+- `value` (string, required): The value to fill
+
+**Returns:**
+```json
+"Filled #email with: user@example.com"
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found or not an input field (timeout after 10 seconds)
+
+**Example:**
+```bash
+browser_fill?selector=#email&value=user@example.com
+```
+
+### browser_type
+
+Type text character by character with keyboard events. Clicks the element first to focus. Use this when you need to trigger JavaScript input handlers or autocomplete.
+
+**Parameters:**
+- `selector` (string, required): CSS selector of the element (will be clicked to focus first)
+- `text` (string, required): Text to type
+- `delay` (number, optional): Delay in milliseconds between keystrokes (default: 50)
+
+**Returns:**
+```json
+"Typed \"Hello World\" into #message"
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found (timeout after 10 seconds)
+
+**Example:**
+```bash
+browser_type?selector=#message&text=Hello+World&delay=100
+```
+
+### browser_select
+
+Select an option in a `<select>` dropdown element.
+
+**Parameters:**
+- `selector` (string, required): CSS selector of the `<select>` element
+- `value` (string, required): Value of the option to select (matches the option's `value` attribute)
+
+**Returns:**
+```json
+"Selected \"us\" in #country"
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found or not a select element (timeout after 10 seconds)
+- Option value not found in dropdown
+
+**Example:**
+```bash
+browser_select?selector=#country&value=us
+```
+
+### browser_hover
+
+Hover the mouse over an element. Useful for triggering dropdown menus, tooltips, or hover effects.
+
+**Parameters:**
+- `selector` (string, required): CSS selector of the element to hover over
+
+**Returns:**
+```json
+"Hovered over .menu-item"
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found (timeout after 10 seconds)
+
+**Example:**
+```bash
+browser_hover?selector=.menu-item
+```
+
+### browser_scroll
+
+Scroll the page or a specific element.
+
+**Parameters:**
+- `direction` (string, required): Scroll direction
+  - `"up"` - Scroll up by specified pixels
+  - `"down"` - Scroll down by specified pixels
+  - `"top"` - Jump to the top of page/element
+  - `"bottom"` - Jump to the bottom of page/element
+- `amount` (number, optional): Pixels to scroll for `"up"`/`"down"` (default: 500)
+- `selector` (string, optional): CSS selector of element to scroll (defaults to page)
+
+**Returns:**
+```json
+"Scrolled down by 500px"
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found when `selector` is specified
+
+**Examples:**
+```bash
+# Scroll down
+browser_scroll?direction=down&amount=300
+
+# Scroll to top
+browser_scroll?direction=top
+
+# Scroll specific element
+browser_scroll?direction=bottom&selector=#sidebar
+```
+
+## Observation and extraction
+
+### browser_screenshot
+
+Take a screenshot of the current page or a specific element. Returns a base64-encoded PNG image.
+
+**Parameters:**
+- `fullPage` (boolean, optional): Capture full scrollable page (default: false, viewport only)
+- `selector` (string, optional): CSS selector of element to screenshot
+
+**Returns:** Base64-encoded PNG image (MIME type: `image/png`)
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found when `selector` is specified
+
+**Examples:**
+```bash
+# Viewport screenshot
+browser_screenshot
+
+# Full page screenshot
+browser_screenshot?fullPage=true
+
+# Element screenshot
+browser_screenshot?selector=header
+```
+
+### browser_get_content
+
+Extract text or HTML content from the page. Useful for data extraction and reading page content.
+
+**Parameters:**
+- `type` (string, optional): Content type to extract (default: `"text"`)
+  - `"text"` - Visible text content
+  - `"html"` - Raw HTML markup
+- `selector` (string, optional): CSS selector to scope extraction (defaults to full page)
+
+**Returns:** Extracted content as text (truncated to 100,000 characters if too large)
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Element not found when `selector` is specified
+
+**Examples:**
+```bash
+# Get all page text
+browser_get_content?type=text
+
+# Get HTML of specific element
+browser_get_content?type=html&selector=main
+
+# Get text from element
+browser_get_content?selector=h1
+```
+
+### browser_evaluate
+
+Execute JavaScript code in the browser page context. Use for extracting structured data, accessing browser APIs, or performing complex operations not available through other tools.
+
+**Parameters:**
+- `script` (string, required): JavaScript code to execute (use arrow function for expressions: `() => document.title`)
+
+**Returns:** Result of the evaluation (JSON-serializable), returned as text (JSON formatted if object/array)
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- JavaScript execution error (syntax error, runtime error, etc.)
+
+**Examples:**
+```bash
+# Get page title
+browser_evaluate?script=document.title
+
+# Extract structured data
+browser_evaluate?script=Array.from(document.querySelectorAll('a')).map(a=>({text:a.innerText,href:a.href}))
+
+# Get computed style
+browser_evaluate?script=getComputedStyle(document.body).backgroundColor
+```
+
+## Tab management
+
+### browser_new_tab
+
+Open a new browser tab and optionally navigate to a URL. Automatically switches to the new tab.
+
+**Parameters:**
+- `url` (string, optional): URL to navigate to in the new tab
+
+**Returns:**
+```json
+{
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "tabsCount": 2
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Navigation timeout if `url` is specified
+
+**Example:**
+```bash
+browser_new_tab?url=https://example.com
+```
+
+### browser_list_tabs
+
+List all open tabs in the current browser session.
+
+**Parameters:** None
+
+**Returns:**
+```json
+[
+  {"index": 0, "url": "https://example.com", "title": "Example", "isActive": false},
+  {"index": 1, "url": "https://google.com", "title": "Google", "isActive": true}
+]
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+
+**Example:**
+```bash
+browser_list_tabs
+```
+
+### browser_switch_tab
+
+Switch to a different tab by index.
+
+**Parameters:**
+- `index` (number, required): Tab index (0-based, as shown by `browser_list_tabs`)
+
+**Returns:**
+```json
+{
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "index": 0
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Tab index out of range (error: `"Tab index <n> out of range (0-<max>)"`)
+
+**Example:**
+```bash
+browser_switch_tab?index=0
+```
+
+## Shader and animation control
+
+### browser_disable_shaders
+
+Inject a script that blocks WebGL, throttles `requestAnimationFrame`, and freezes CSS animations. Use on heavy shader-rendered pages (Three.js, WebGL dashboards) to reduce GPU load. Call BEFORE navigating to the target page for best results.
+
+**Parameters:**
+- `webgl` (boolean, optional): Block WebGL context creation (default: true)
+- `animations` (boolean, optional): Freeze CSS animations and transitions (default: true)
+- `raf` (boolean, optional): Throttle `requestAnimationFrame` to ~1 FPS (default: true)
+
+**Returns:**
+```json
+{
+  "message": "Shader killer injected: WebGL blocked, requestAnimationFrame throttled, CSS animations frozen",
+  "disabled": ["WebGL blocked", "requestAnimationFrame throttled to ~1 FPS", "CSS animations/transitions frozen"]
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+
+**Example:**
+```bash
+browser_disable_shaders?webgl=true&animations=true&raf=true
+```
+
+### browser_restore_shaders
+
+Restore WebGL, `requestAnimationFrame`, and CSS animations that were disabled by `browser_disable_shaders`. Removes the injected style element. Note: WebGL and RAF require page reload for full restoration.
+
+**Parameters:** None
+
+**Returns:**
+```json
+{
+  "message": "Restored: CSS animations restored; WebGL requires page reload to fully restore",
+  "note": "For full WebGL/RAF restoration, navigate or reload the page."
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+
+**Example:**
+```bash
+browser_restore_shaders
+```
+
+## Practical guidance
+
+- **Prefer `browser_fill` over `browser_type`** for form inputs unless you need keyboard events
+- **Use `browser_wait_for`** on dynamic pages before clicking or filling elements
+- **Use `browser_get_content`** for data extraction; use screenshots for visual verification
+- **Call `browser_disable_shaders` before navigation** for best results on heavy pages
+- **Always call `browser_end`** when done to free resources
+- **Use `browser_list_tabs`** to check tab state before switching in multi-tab workflows

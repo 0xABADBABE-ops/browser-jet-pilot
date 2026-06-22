@@ -1,0 +1,176 @@
+---
+title: "Quickstart"
+description: "Get MCP Browser Server running and execute browser automation in minutes."
+keywords: ["quickstart", "first steps", "mcp server", "browser tools"]
+---
+
+## Choose your mode
+
+MCP Browser Server supports two primary transport modes:
+
+- **HTTP mode**: Expose browser tools as an HTTP service for remote access
+- **Stdio mode**: Direct integration with MCP clients like Claude Desktop
+
+## Option 1: HTTP mode (recommended for testing)
+
+Start the server with HTTP transport:
+
+```bash
+# Build first
+npm run build
+
+# Start in HTTP mode
+node dist/index.js --port 3100 --host 0.0.0.0
+```
+
+Your MCP endpoint is now available at `http://localhost:3100/mcp`.
+
+## Option 2: Stdio mode (for Claude Desktop)
+
+Start the server for stdio transport:
+
+```bash
+node dist/index.js
+```
+
+Configure Claude Desktop to connect to this server. See [/getting-started/installation](/getting-started/installation) for Claude Desktop configuration.
+
+## Run your first browser sequence
+
+This sequence starts a browser, navigates to a page, captures content, and closes cleanly.
+
+```bash
+npm run agent -- --server-url http://localhost:3100/mcp --sequence \
+  browser_start \
+  "browser_navigate?url=https://example.com" \
+  "browser_get_content?selector=body&type=text" \
+  browser_end
+```
+
+If this succeeds, your core path is working.
+
+## Verify server health
+
+Check that the server is responding:
+
+```bash
+curl http://localhost:3100/healthz
+```
+
+Expected response:
+
+```json
+{"status":"ok","service":"mcp-browser-server","transport":"http"}
+```
+
+## Using BrowserAgent with AI
+
+For AI-powered browser automation, provide an API key:
+
+```bash
+# Using OpenAI
+OPENAI_API_KEY=sk-... npm run agent -- --server-url http://localhost:3100/mcp \
+  "Go to example.com and summarize the page"
+
+# Using Anthropic
+ANTHROPIC_API_KEY=sk-ant-... npm run agent -- --server-url http://localhost:3100/mcp \
+  --ai-provider anthropic "Extract all links from the current page"
+```
+
+## Common scenarios
+
+### Take a screenshot
+
+```bash
+npm run agent -- --server-url http://localhost:3100/mcp --sequence \
+  browser_start \
+  "browser_navigate?url=https://example.com" \
+  "browser_screenshot?fullPage=true" \
+  browser_end
+```
+
+### Fill a form
+
+```bash
+npm run agent -- --server-url http://localhost:3100/mcp --sequence \
+  browser_start \
+  "browser_navigate?url=https://example.com/form" \
+  "browser_fill?selector=#name&value=John+Doe" \
+  "browser_fill?selector=#email&value=john@example.com" \
+  "browser_click?selector=button[type=submit]" \
+  browser_end
+```
+
+### Extract structured data
+
+```bash
+npm run agent -- --server-url http://localhost:3100/mcp --sequence \
+  browser_start \
+  "browser_navigate?url=https://example.com" \
+  "browser_evaluate?script=Array.from(document.querySelectorAll('a')).map(a=>({text:a.innerText,href:a.href}))" \
+  browser_end
+```
+
+## Troubleshooting
+
+### curl healthz fails
+
+If `curl http://localhost:3100/healthz` fails or returns an error:
+
+- **Check if the server is running**: Verify `node dist/index.js` is active and not crashed
+- **Verify port**: Ensure port 3100 is not already in use by another process
+- **Check host binding**: If connecting from another machine, use `--host 0.0.0.0` instead of `localhost`
+- **Build output**: Make sure you've run `npm run build` and the `dist/` directory exists
+
+### browser_start fails
+
+If `browser_start` or any browser tool fails:
+
+- **Missing dependencies**: Ensure Chromium is installed. The server downloads it on first use, which may take time
+- **Insufficient resources**: Check available memory and disk space (Chromium needs ~300MB)
+- **Display issues (Linux)**: If running headless without a display, ensure XVFB or similar is configured
+- **Previous browser instance**: A browser may already be running. Call `browser_end` first to clean up
+
+### Tool calls return errors
+
+If MCP tool calls return errors to your client:
+
+- **Transport mismatch**: Ensure your client uses the correct URL path (`/mcp` for HTTP mode)
+- **Timeouts**: Increase timeout values if browser operations take longer than expected
+- **Malformed requests**: Verify tool names and parameters match the schema in [/reference/tools](/reference/tools)
+- **Server logs**: Check server output for detailed error messages and stack traces
+
+### Port conflicts
+
+If you see "port already in use" errors:
+
+```bash
+# Find and kill the process on port 3100 (Windows)
+netstat -ano | findstr :3100
+taskkill /PID <PID> /F
+
+# Find and kill the process on port 3100 (macOS/Linux)
+lsof -ti:3100 | xargs kill -9
+```
+
+Or choose a different port:
+
+```bash
+node dist/index.js --port 3101 --host 0.0.0.0
+```
+
+### CDP connection issues
+
+If connecting to an external CDP endpoint fails:
+
+- **CDP endpoint availability**: Verify the remote browser is running with `--remote-debugging-port=9222`
+- **Network accessibility**: Ensure the CDP URL is reachable from the server's network
+- **Wrong CDP URL**: Check that `CDP_URL` includes the correct host (not `localhost` if running in Docker)
+- **Firewall**: Confirm ports 9222 and related ports are not blocked
+
+## Next steps
+
+- Deploy with Docker: [/getting-started/docker](/getting-started/docker)
+- Learn BrowserAgent and BrowserSkill: [/guides/agent-and-skill](/guides/agent-and-skill)
+- Run reliability checks: [/guides/reliability-checks](/guides/reliability-checks)
+- View all tools: [/reference/tools](/reference/tools)
