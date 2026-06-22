@@ -4,87 +4,87 @@
 
 ## Proudly announcing!
 
-### v1.0.0 — Base Release
+### v1.0.1 — Live & Stable 💅
 
-- **API Key Authentication** — Secure your HTTP transport with API key authentication using the `API_KEY` environment variable and `X-API-Key` header
-- **Testing Infrastructure** — Comprehensive test suite powered by Vitest with coverage reports and UI mode
-- **Developer Experience** — ESLint, Prettier, and pre-commit hooks (Husky + lint-staged) for consistent code quality
-- **Enhanced Security** — Constant-time API key comparison using `crypto.timingSafeEqual` to prevent timing attacks
-- **Improved CI/CD** — Extended workflow with type checking, linting, testing, and security audits
-- **Bug Fixes** — Fixed SVG/MathML element handling in content extraction, proper browser cleanup on session end, and enhanced type safety
+- **API Key Authentication** — secure your HTTP transport with `API_KEY` and `X-API-Key` header
+- **Constant-time auth** — `crypto.timingSafeEqual` keeps the bad actors guessing
+- **Full test suite** — 127 Vitest tests, zero flakes, CI-green on every push
+- **Developer tooling** — ESLint, Prettier, Husky, lint-staged all tuned and humming
+- **CI/CD pipeline** — typecheck → lint → format:check → test across Node 20/22/24
+- **Shader control tools** — tame those heavy WebGL pages with `browser_disable_shaders`
+- **Bug fixes** — SVG/MathML handling, proper browser cleanup, enhanced type safety
 
-### Extra tools
+### The extras that make it ✨
 
-- **`browser_disable_shaders`** — Block WebGL, freeze CSS animations, and throttle `requestAnimationFrame` to ~1 FPS for heavy shader-rendered pages
-- **`browser_restore_shaders`** — Restore shader operations (WebGL/RAF require page reload to fully restore)
+- **`browser_disable_shaders`** — block WebGL, freeze CSS animations, throttle `requestAnimationFrame` to ~1 FPS. Perfect for those pages that think they're a video game.
+- **`browser_restore_shaders`** — bring the sparkle back (WebGL/RAF need a page reload to fully restore, nature of the beast)
 
-## Description
+## What even is this?
 
-Self-hosted MCP server for browser automation. Connect to your own Chromium instance via CDP — no Browserbase subscription needed.
+A self-hosted MCP server for browser automation. Connect to your own Chromium via CDP — no subscription, no cloud, no weird per-session pricing. Just your browser, your infra, your rules.
 
-Drop-in alternative to `@browserbasehq/mcp` that runs on your infrastructure.
+Drop-in alternative to `@browserbasehq/mcp`. Same MCP protocol, none of the lock-in.
 
 ## Features
 
-- **Connect to existing browser** via Chrome DevTools Protocol (CDP)
-- **Or launch a new one** managed by Playwright
-- **19 deterministic tools** — no LLM needed for basic browser control (including shader control tools)
-- **MCP stdio transport** — works with Claude Desktop, Cursor, or any MCP client
-- **MCP HTTP transport** — expose as a service on a port with optional API key authentication
-- **BrowserAgent** — AI-powered autonomous browser agent (OpenAI, Anthropic, or custom)
+- **Connect to your existing browser** via Chrome DevTools Protocol, or **launch a fresh one** managed by Playwright
+- **19 deterministic tools** — no LLM required for basic browser control
+- **MCP stdio transport** — works with Claude Desktop, Cursor, any MCP client
+- **MCP HTTP transport** — expose as a service with optional API key auth
+- **BrowserAgent** — AI-powered autonomous agent (OpenAI, Anthropic, or custom endpoint)
 - **BrowserSkill** — standardized skill interface for agent frameworks
-- **Tab management** — multi-tab workflows
-- **Screenshot support** — base64 PNG output, element or full-page
-- **Comprehensive testing** — Vitest test suite with coverage and UI
-- **Developer tooling** — ESLint, Prettier, pre-commit hooks
+- **Multi-tab workflows** — because one tab is never enough
+- **Screenshots** — base64 PNG, full-page or single element
+- **Comprehensive testing** — 127 tests, Vitest, coverage reports
+- **Pre-commit hooks** — ESLint + Prettier gatekeep every commit
 
-## A little notice
+## A little notice 🌸
 
-I want you to understand that this repository contains a highly powerful toolset—exceptionally powerful.
+I want you to understand that this repository contains a highly powerful toolset — _exceptionally_ powerful.
 
-It is shared in good faith, with the expectation that you will use these tools responsibly and for educational purposes, without causing harm to others. There are no guardrails, restrictions, or feature flags built in that would limit or alter their original capabilities.
+It is shared in good faith, with the expectation that you will use these tools responsibly and for educational purposes, without causing harm to others. There are no guardrails, restrictions, or feature flags that would limit or alter their original capabilities.
 
-As the saying goes, _a weapon is only as dangerous as the hands that wield it._ Power itself is neutral—its consequences are defined entirely by the intent and discipline of the user.
+As the saying goes, _a weapon is only as dangerous as the hands that wield it._ Power itself is neutral — its consequences are defined entirely by the intent and discipline of the user.
 
-I won’t go into detail about what could go wrong or the many ways these tools might be misused. If you found this repository while looking for **that**, you likely already know what you’re doing—and I won’t be the one to outline those paths. Instead, in the next part of this document, you’ll find guidance on how you **should** use these tools, along with the valuable and practical functionality they were designed to provide.
+I won't go into detail about what could go wrong or the many ways these tools might be misused. If you found this repository while looking for **_that_**, you likely already know what you're doing — and I won't be the one to outline those paths. Instead, below you'll find guidance on how you **should** use these tools, along with the valuable, practical functionality they were designed to provide.
 
 Keep in mind: these tools possess an extraordinary level of power, and that power is entirely in your hands.
 
-If any damage occurs—whether through data leaks, automated actions, replay mechanisms, or otherwise—responsibility does not lie with the tools or this project. The sole accountable party is you. ¯\_(ツ)\_/¯
+If any damage occurs — whether through data leaks, automated actions, replay mechanisms, or otherwise — responsibility does not lie with the tools or this project. The sole accountable party is you. ¯\\\_(ツ)\_/¯
 
 ## Quick Start
 
 ### 1. Have a browser running with CDP
 
 ```bash
-# If using Xvfb + Chromium:
+# With Xvfb + Chromium:
 chromium --no-sandbox --remote-debugging-port=9222 --disable-gpu
 
-# Or just connect to your existing VNC Chromium (make sure it has --remote-debugging-port=9222)
+# Or point at your existing Chromium (make sure it has --remote-debugging-port=9222)
 ```
 
-### 2. Install and run
+### 2. Install & run
 
 ```bash
 npm install
 npm run build
 
-# Stdio mode (for Claude Desktop, etc.)
+# Stdio mode (Claude Desktop, Cursor, etc.)
 node dist/index.js
 
 # HTTP mode
 node dist/index.js --port 3100
 ```
 
-### 3. Configure Claude Desktop
+### 3. Hook it up to Claude Desktop
 
-Add to your `claude_desktop_config.json`:
+Drop this into your `claude_desktop_config.json`:
 
-**Config file locations by platform:**
-
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+| Platform | Config path                                                       |
+| -------- | ----------------------------------------------------------------- |
+| macOS    | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows  | `%APPDATA%\Claude\claude_desktop_config.json`                     |
+| Linux    | `~/.config/Claude/claude_desktop_config.json`                     |
 
 ```json
 {
@@ -100,93 +100,76 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-## Documentation site (Mintlify)
+## Docs (Mintlify)
 
-Project docs are now available in `docs/` (Mintlify format).
+Project docs live in `docs/` — Mintlify format, cute and functional.
 
 ```bash
-# Install dependencies (includes Mint CLI as dev dependency)
-npm install
-
-# Validate docs build
-npm run docs:validate
-
-# Check internal links
-npm run docs:links
-
-# Run docs locally
-npm run docs:dev
+npm install          # includes Mint CLI as dev dependency
+npm run docs:validate  # check it builds clean
+npm run docs:links     # no dead links allowed
+npm run docs:dev       # browse locally
 ```
 
-## Continuous integration
+## CI/CD
 
-GitHub Actions workflow is available at `.github/workflows/ci.yml`.
+Every push and PR goes through the wringer. The workflow lives at `.github/workflows/ci.yml`.
 
-It runs on every push and pull request, and executes:
+```
+npm ci → typecheck → lint → format:check → test
+```
 
-- `npm ci`
-- `npm run build`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run test -- --run`
-- `npm audit --audit-level=moderate`
-- `npm run docs:validate`
-- `npm run docs:links`
-- Docker Compose startup + health wait
-- `npm run reliability:check`
+Across Node 20, 22, and 24 — because we don't mess around. (Node 18 was politely asked to leave the party — vitest v4 needs `styleText` from `node:util`, which landed in 20.12.0.)
 
 ## Development
 
-### Available Scripts
+### Scripts at your fingertips
 
-| Command                     | Description                        |
-| --------------------------- | ---------------------------------- |
-| `npm run build`             | Compile TypeScript to `dist/`      |
-| `npm run dev`               | Run in development mode with `tsx` |
-| `npm start`                 | Run the built server               |
-| `npm run agent`             | Run BrowserAgent CLI               |
-| `npm run agent:seq`         | Run deterministic tool sequence    |
-| `npm run test`              | Run Vitest test suite              |
-| `npm run test:coverage`     | Run tests with coverage report     |
-| `npm run test:ui`           | Run Vitest UI interface            |
-| `npm run lint`              | Run ESLint                         |
-| `npm run lint:fix`          | Fix ESLint issues automatically    |
-| `npm run format`            | Format code with Prettier          |
-| `npm run format:check`      | Check code formatting              |
-| `npm run reliability:check` | Run full reliability test suite    |
+| Command                     | What it does                            |
+| --------------------------- | --------------------------------------- |
+| `npm run build`             | Compile TypeScript → `dist/`            |
+| `npm run dev`               | Dev mode with `tsx` (hot, fast, lovely) |
+| `npm start`                 | Run the built server                    |
+| `npm run agent`             | BrowserAgent CLI                        |
+| `npm run agent:seq`         | Deterministic tool sequence (no AI)     |
+| `npm test`                  | Run the full 127-test suite             |
+| `npm run test:coverage`     | Tests + coverage report                 |
+| `npm run test:ui`           | Vitest UI (pretty!)                     |
+| `npm run lint`              | ESLint check                            |
+| `npm run lint:fix`          | ESLint auto-fix                         |
+| `npm run format`            | Prettier — make it pretty               |
+| `npm run format:check`      | Prettier — is it pretty?                |
+| `npm run typecheck`         | `tsc --noEmit` type safety check        |
+| `npm run reliability:check` | Full reliability test suite             |
 
-### Pre-commit Hooks
+### Pre-commit magic
 
-The project uses Husky and lint-staged to ensure code quality:
+Husky + lint-staged keep the repo pristine:
 
-- TypeScript/TSX files: ESLint + Prettier
-- JSON, Markdown, YAML: Prettier
-
-Install hooks after cloning:
+- `.ts`, `.tsx` → ESLint + Prettier
+- `.json`, `.md`, `.yml` → Prettier
 
 ```bash
-npm install
+npm install   # hooks set up automatically via the prepare script ✨
 ```
 
-The `prepare` script in `package.json` automatically sets up Husky.
+## Docker
 
-## Run with Docker
-
-### Quick start (Docker Compose)
+### Compose (the easy way)
 
 ```bash
 docker compose up -d --build
-docker compose ps
+docker compose ps              # should say healthy 💚
 curl http://localhost:3100/healthz
 ```
 
-Expected:
+What you get:
 
 - MCP endpoint: `http://localhost:3100/mcp`
-- Health endpoint: `http://localhost:3100/healthz`
-- Container status: `healthy` (`docker compose ps`)
+- Health check: `http://localhost:3100/healthz`
+- Built-in container healthcheck against `/healthz`
 
-Quick smoke test (tool flow):
+Quick smoke test:
 
 ```bash
 npm run agent -- --server-url http://localhost:3100/mcp --sequence \
@@ -194,10 +177,9 @@ npm run agent -- --server-url http://localhost:3100/mcp --sequence \
   "browser_get_content?selector=body&type=text" browser_end
 ```
 
-> First image build takes longer because Playwright Chromium binaries are installed in-container.
-> Compose includes a built-in healthcheck against `/healthz`.
+> First build takes a bit — Playwright Chromium binaries install inside the container. Worth the wait.
 
-Thorough reliability pass (health + lifecycle + extraction + multi-tab + 5x repeat):
+Full reliability pass (health + lifecycle + extraction + multi-tab, 5x repeat):
 
 ```bash
 npm run reliability:check
@@ -205,13 +187,13 @@ npm run reliability:check
 npm run reliability:check -- http://localhost:3100/mcp
 ```
 
-### Stop
+### Teardown
 
 ```bash
 docker compose down
 ```
 
-### Option B: Plain Docker (no Compose)
+### Plain Docker (no Compose)
 
 ```bash
 docker build -t browser-jet-pilot:local .
@@ -229,7 +211,7 @@ docker run --rm -p 3100:3100 --shm-size=1g \
   browser-jet-pilot:local
 ```
 
-If `host.docker.internal` is not available on your Linux Docker setup, add:
+On Linux where `host.docker.internal` doesn't resolve:
 
 ```bash
 --add-host=host.docker.internal:host-gateway
@@ -239,20 +221,20 @@ If `host.docker.internal` is not available on your Linux Docker setup, add:
 
 ### Session
 
-| Tool            | Description                                      |
-| --------------- | ------------------------------------------------ |
-| `browser_start` | Connect to browser (or launch). Must call first. |
-| `browser_end`   | Close the current session.                       |
+| Tool            | Description                                                  |
+| --------------- | ------------------------------------------------------------ |
+| `browser_start` | Connect to browser (or launch one). Call this first, always. |
+| `browser_end`   | Close the current session. Bye-bye!                          |
 
 ### Navigation
 
-| Tool                 | Parameters | Description                      |
-| -------------------- | ---------- | -------------------------------- |
-| `browser_navigate`   | `url`      | Go to a URL                      |
-| `browser_new_tab`    | `url?`     | Open a new tab                   |
-| `browser_list_tabs`  | —          | List all open tabs               |
-| `browser_switch_tab` | `index`    | Switch to tab by index           |
-| `browser_get_info`   | —          | Get current URL, title, viewport |
+| Tool                 | Parameters | Description                  |
+| -------------------- | ---------- | ---------------------------- |
+| `browser_navigate`   | `url`      | Go to a URL                  |
+| `browser_new_tab`    | `url?`     | Open a new tab               |
+| `browser_list_tabs`  | —          | List all open tabs           |
+| `browser_switch_tab` | `index`    | Switch to tab by index       |
+| `browser_get_info`   | —          | Current URL, title, viewport |
 
 ### Interaction
 
@@ -261,40 +243,40 @@ If `host.docker.internal` is not available on your Linux Docker setup, add:
 | `browser_click`  | `selector`                          | Click an element            |
 | `browser_fill`   | `selector`, `value`                 | Clear and fill an input     |
 | `browser_type`   | `selector`, `text`, `delay?`        | Type character by character |
-| `browser_select` | `selector`, `value`                 | Select dropdown option      |
+| `browser_select` | `selector`, `value`                 | Select a dropdown option    |
 | `browser_hover`  | `selector`                          | Hover over an element       |
 | `browser_scroll` | `direction`, `amount?`, `selector?` | Scroll page or element      |
 
 ### Observation
 
-| Tool                  | Parameters                       | Description                    |
-| --------------------- | -------------------------------- | ------------------------------ |
-| `browser_screenshot`  | `fullPage?`, `selector?`         | Take a screenshot (base64 PNG) |
-| `browser_get_content` | `type?`, `selector?`             | Extract text or HTML           |
-| `browser_evaluate`    | `script`                         | Run JavaScript in the page     |
-| `browser_wait_for`    | `selector`, `state?`, `timeout?` | Wait for an element            |
+| Tool                  | Parameters                       | Description                |
+| --------------------- | -------------------------------- | -------------------------- |
+| `browser_screenshot`  | `fullPage?`, `selector?`         | Screenshot (base64 PNG)    |
+| `browser_get_content` | `type?`, `selector?`             | Extract text or HTML       |
+| `browser_evaluate`    | `script`                         | Run JavaScript in the page |
+| `browser_wait_for`    | `selector`, `state?`, `timeout?` | Wait for an element        |
 
 ### Shader Control
 
-| Tool                      | Parameters                      | Description                                                                                                                         |
-| ------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `browser_disable_shaders` | `webgl?`, `animations?`, `raf?` | Block WebGL, freeze CSS animations, throttle requestAnimationFrame to ~1 FPS. Use on heavy shader-rendered pages before navigating. |
-| `browser_restore_shaders` | —                               | Remove injected style element. WebGL/RAF need page reload to fully restore.                                                         |
+| Tool                      | Parameters                      | Description                                                                                                           |
+| ------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `browser_disable_shaders` | `webgl?`, `animations?`, `raf?` | Block WebGL, freeze CSS animations, throttle RAF to ~1 FPS. Hit this before navigating to heavy shader pages.         |
+| `browser_restore_shaders` | —                               | Remove injected style overrides. WebGL/RAF need a page reload to fully come back — that's just how the browser works. |
 
 ## Configuration
 
 ### CLI Flags
 
-| Flag                   | Env Var          | Default                 | Description                              |
-| ---------------------- | ---------------- | ----------------------- | ---------------------------------------- |
-| `--port <n>`           | `PORT`           | (stdio)                 | Port for HTTP transport                  |
-| `--host <host>`        | `HOST`           | `localhost`             | Bind address                             |
-| `--cdp-url <url>`      | `CDP_URL`        | `http://localhost:9222` | CDP endpoint                             |
-| `--launch`             | `LAUNCH=true`    | `false`                 | Launch new browser instead of connecting |
-| `--browser-width <n>`  | `BROWSER_WIDTH`  | `1280`                  | Viewport width                           |
-| `--browser-height <n>` | `BROWSER_HEIGHT` | `720`                   | Viewport height                          |
+| Flag                   | Env Var          | Default                 | What it does                               |
+| ---------------------- | ---------------- | ----------------------- | ------------------------------------------ |
+| `--port <n>`           | `PORT`           | (stdio)                 | Port for HTTP transport                    |
+| `--host <host>`        | `HOST`           | `localhost`             | Bind address                               |
+| `--cdp-url <url>`      | `CDP_URL`        | `http://localhost:9222` | CDP endpoint                               |
+| `--launch`             | `LAUNCH=true`    | `false`                 | Launch a new browser instead of connecting |
+| `--browser-width <n>`  | `BROWSER_WIDTH`  | `1280`                  | Viewport width                             |
+| `--browser-height <n>` | `BROWSER_HEIGHT` | `720`                   | Viewport height                            |
 
-### Environment Variables
+### Environment
 
 ```bash
 # .env file
@@ -302,57 +284,55 @@ CDP_URL=http://localhost:9222
 LAUNCH=false
 BROWSER_WIDTH=1280
 BROWSER_HEIGHT=720
-API_KEY=your-secret-api-key  # Optional: secure HTTP transport
+API_KEY=your-secret-api-key  # optional — locks down HTTP transport
 ```
 
-#### API Key Authentication
+### API Key Auth 🔐
 
-When running in HTTP mode, you can optionally secure the server with an API key:
-
-1. Set the `API_KEY` environment variable:
+When running in HTTP mode, you can optionally gate the server behind an API key:
 
 ```bash
 export API_KEY=your-secret-api-key
 ```
 
-2. Include the key in requests via the `X-API-Key` header:
+Then clients include it in the `X-API-Key` header:
 
 ```bash
 curl -H "X-API-Key: your-secret-api-key" http://localhost:3100/mcp
 ```
 
-The server uses constant-time comparison (`crypto.timingSafeEqual`) to prevent timing attacks when validating API keys.
+The server uses `crypto.timingSafeEqual` for constant-time comparison — no timing attacks on our watch.
 
-## Example: HTTP Transport
+## Examples
+
+### HTTP Transport
 
 ```bash
-# Start the server
 node dist/index.js --port 3100 --host 0.0.0.0
-
-# It listens on http://0.0.0.0:3100/mcp
+# → http://0.0.0.0:3100/mcp
 # Connect any MCP client via Streamable HTTP transport
 ```
 
-## Example: Launch Mode
+### Launch Mode
 
-No existing browser? Launch one:
+No browser lying around? Let Playwright handle it:
 
 ```bash
 node dist/index.js --launch --browser-width 1920 --browser-height 1080
 ```
 
-## Comparison with Browserbase MCP
+## How it stacks up to Browserbase MCP
 
-| Feature                  | Browserbase MCP     | This Server                                  |
+| Feature                  | Browserbase MCP     | Browser Jet Pilot                            |
 | ------------------------ | ------------------- | -------------------------------------------- |
-| Browser hosting          | Browserbase cloud   | Your container                               |
+| Browser hosting          | Browserbase cloud   | Your container 💕                            |
 | Cost                     | Per-session pricing | Free (your infra)                            |
-| `act` (natural language) | Stagehand + LLM     | Not included (use deterministic tools)       |
+| `act` (natural language) | Stagehand + LLM     | Use deterministic tools or BrowserAgent      |
 | `observe`                | Stagehand + LLM     | `browser_get_content` + `browser_screenshot` |
 | `extract`                | Stagehand + LLM     | `browser_evaluate` + `browser_get_content`   |
 | Screenshot               | Via Stagehand       | Native `browser_screenshot`                  |
-| Tab management           | Single page         | Multi-tab                                    |
-| Data residency           | Browserbase servers | Your server                                  |
+| Tab management           | Single page         | Multi-tab ✨                                 |
+| Data residency           | Browserbase servers | Your server, your data                       |
 
 ## Architecture
 
@@ -372,23 +352,23 @@ flowchart LR
   PW -->|CDP| CH["Your Chromium / Chrome"]
 ```
 
-## BrowserAgent (AI-Powered)
+## BrowserAgent (AI-Powered) 🤖
 
-An autonomous agent that connects to the MCP server and uses an LLM to plan and execute browser tasks from natural language.
+An autonomous agent that hooks into the MCP server and uses an LLM to figure out what tools to call, in what order, to accomplish your natural language task.
 
-### CLI Usage
+### CLI
 
 ```bash
-# AI-powered mode (needs OPENAI_API_KEY or ANTHROPIC_API_KEY)
+# AI-powered (needs OPENAI_API_KEY or ANTHROPIC_API_KEY)
 npm run agent -- --server-url http://localhost:3100/mcp \
   "Go to start.gg and find the latest Tekken 7 tournament"
 
-# Use Anthropic
+# Anthropic flavor
 npm run agent -- --server-url http://localhost:3100/mcp \
   --ai-provider anthropic --ai-model claude-sonnet-4-20250514 \
   "Navigate to example.com and extract all links"
 
-# Deterministic mode (no AI, scripted tool calls)
+# Deterministic mode (no AI, straight tool sequence)
 npm run agent -- --server-url http://localhost:3100/mcp --sequence \
   browser_start \
   "browser_navigate?url=https://example.com" \
@@ -396,7 +376,7 @@ npm run agent -- --server-url http://localhost:3100/mcp --sequence \
   browser_end
 ```
 
-### Programmatic Usage
+### Programmatic
 
 ```typescript
 import { BrowserAgent } from 'browser-jet-pilot/agent'
@@ -405,7 +385,7 @@ const agent = new BrowserAgent({
   serverUrl: 'http://localhost:3100/mcp',
   aiProvider: 'openai',
   aiModel: 'gpt-4o',
-  // aiApiKey: 'sk-...',  // or set OPENAI_API_KEY env
+  // aiApiKey: 'sk-...',  // or set OPENAI_API_KEY
   maxSteps: 20,
 })
 
@@ -428,24 +408,24 @@ const result2 = await agent.executeSequence([
 await agent.disconnect()
 ```
 
-### Agent Configuration
+### Agent Config
 
-| Option          | Env Var          | Default                  | Description                |
-| --------------- | ---------------- | ------------------------ | -------------------------- |
-| `serverUrl`     | —                | —                        | MCP server HTTP endpoint   |
-| `serverCommand` | —                | `node`                   | MCP server command (stdio) |
-| `serverArgs`    | —                | `['./dist/index.js']`    | MCP server args (stdio)    |
-| `aiProvider`    | —                | `openai`                 | `openai` or `anthropic`    |
-| `aiModel`       | —                | `gpt-4o`                 | LLM model name             |
-| `aiApiKey`      | `OPENAI_API_KEY` | —                        | API key                    |
-| `aiBaseUrl`     | —                | OpenAI/Anthropic default | Custom endpoint            |
-| `maxSteps`      | —                | `30`                     | Safety limit per task      |
+| Option          | Env Var          | Default               | What it does               |
+| --------------- | ---------------- | --------------------- | -------------------------- |
+| `serverUrl`     | —                | —                     | MCP server HTTP endpoint   |
+| `serverCommand` | —                | `node`                | MCP server command (stdio) |
+| `serverArgs`    | —                | `['./dist/index.js']` | MCP server args (stdio)    |
+| `aiProvider`    | —                | `openai`              | `openai` or `anthropic`    |
+| `aiModel`       | —                | `gpt-4o`              | LLM model name             |
+| `aiApiKey`      | `OPENAI_API_KEY` | —                     | Your API key               |
+| `aiBaseUrl`     | —                | provider default      | Custom endpoint            |
+| `maxSteps`      | —                | `30`                  | Safety limit per task      |
 
-## BrowserSkill (Agent Framework Integration)
+## BrowserSkill (Agent Framework Integration) 🧩
 
-A standardized skill wrapper that can be loaded by any agent framework. Provides quick helper methods and automatic screenshot saving.
+A standardized skill wrapper ready to drop into any agent framework. Comes with quick helper methods and automatic screenshot saving.
 
-### Programmatic Usage
+### Programmatic
 
 ```typescript
 import { BrowserSkill } from 'browser-jet-pilot/skill'
@@ -458,7 +438,7 @@ const skill = new BrowserSkill({
 
 await skill.init()
 
-// Execute an AI-powered browser task
+// AI-powered browser task
 const result = await skill.execute(
   'Go to start.gg and extract tournament data',
   { workDir: './workspace' }
@@ -498,7 +478,7 @@ interface SkillResult {
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 20.12.0
 - Chromium with `--remote-debugging-port=9222` (or launch mode)
 - For Playwright browser launch: `npx playwright install chromium`
 
@@ -506,4 +486,4 @@ interface SkillResult {
 
 MIT
 
-designed, written and coded solely by head and from 💜 for you `0xabadbabe` (Sudo Qt - jet'aime)
+designed, written and coded solely by head and from 💜 for you `0xabadbabe` (Sudo Qt — jet'aime)
