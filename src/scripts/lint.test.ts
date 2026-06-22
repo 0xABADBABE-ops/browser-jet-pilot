@@ -70,7 +70,7 @@ describe('lint script', () => {
       try {
         execSync('npm run lint', {
           cwd: projectRoot,
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
         })
       } catch (error: unknown) {
@@ -79,7 +79,11 @@ describe('lint script', () => {
         // Exit code 0 or 1 from npm (warnings) is acceptable
         // Exit code >1 indicates real errors
         if (status && status > 1) {
-          throw error
+          const stderr = (error as { stderr?: string }).stderr || ''
+          throw new Error(
+            `Lint failed with exit code ${status}: ${stderr.slice(0, 500)}`,
+            { cause: error }
+          )
         }
       }
     })
@@ -155,16 +159,19 @@ describe('lint script', () => {
       try {
         execSync('npm run lint', {
           cwd: projectRoot,
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
+          encoding: 'utf8',
         })
       } catch (error: unknown) {
         exitCode = (error as { status: number }).status ?? -1
         // npm may exit with 1 for warnings, but lint should pass
         // If exit code > 1, there are real errors
         if (exitCode > 1) {
-          throw new Error(`Lint failed with exit code ${exitCode}`, {
-            cause: error,
-          })
+          const stderr = (error as { stderr?: string }).stderr || ''
+          throw new Error(
+            `Lint failed with exit code ${exitCode}: ${stderr.slice(0, 500)}`,
+            { cause: error }
+          )
         }
       }
 
@@ -176,7 +183,7 @@ describe('lint script', () => {
       try {
         const result = execSync('npm run lint', {
           cwd: projectRoot,
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
         })
         // If we get here, lint passed
@@ -185,7 +192,11 @@ describe('lint script', () => {
         const status = (error as { status: number | null }).status
         // Exit code >1 indicates real errors
         if (status && status > 1) {
-          throw error
+          const stderr = (error as { stderr?: string }).stderr || ''
+          throw new Error(
+            `Lint failed with exit code ${status}: ${stderr.slice(0, 500)}`,
+            { cause: error }
+          )
         }
         // Exit code 0 or 1 (npm warnings) is acceptable
         expect([0, 1]).toContain(status ?? -1)

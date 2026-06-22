@@ -75,7 +75,7 @@ describe('typecheck script', () => {
       try {
         execSync('npm run typecheck', {
           cwd: projectRoot,
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
         })
       } catch (error: unknown) {
@@ -83,7 +83,11 @@ describe('typecheck script', () => {
         const status = (error as { status: number | null }).status
         // Exit code >1 indicates real errors (npm may return 1 for warnings)
         if (status && status > 1) {
-          throw error
+          const stderr = (error as { stderr?: string }).stderr || ''
+          throw new Error(
+            `Typecheck failed with exit code ${status}: ${stderr.slice(0, 500)}`,
+            { cause: error }
+          )
         }
       }
     })
@@ -94,10 +98,18 @@ describe('typecheck script', () => {
       try {
         execSync('npm run typecheck', {
           cwd: projectRoot,
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
+          encoding: 'utf8',
         })
       } catch (error: unknown) {
         exitCode = (error as { status: number }).status ?? -1
+        if (exitCode > 1) {
+          const stderr = (error as { stderr?: string }).stderr || ''
+          throw new Error(
+            `Typecheck failed with exit code ${exitCode}: ${stderr.slice(0, 500)}`,
+            { cause: error }
+          )
+        }
       }
 
       // Exit code 0 or 1 (npm warnings) is acceptable for successful typecheck
@@ -112,7 +124,7 @@ describe('typecheck script', () => {
       try {
         const result = execSync('npm run typecheck', {
           cwd: projectRoot,
-          stdio: ['ignore', 'pipe', 'ignore'],
+          stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
         })
         // If we get here, typecheck passed
@@ -121,7 +133,11 @@ describe('typecheck script', () => {
         const status = (error as { status: number | null }).status
         // Exit code >1 indicates real errors
         if (status && status > 1) {
-          throw error
+          const stderr = (error as { stderr?: string }).stderr || ''
+          throw new Error(
+            `Typecheck failed with exit code ${status}: ${stderr.slice(0, 500)}`,
+            { cause: error }
+          )
         }
       }
     })
