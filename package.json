@@ -61,7 +61,7 @@
     "vitest": "^4.1.9"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
