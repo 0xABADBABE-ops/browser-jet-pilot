@@ -2,9 +2,7 @@
 
 [![CI](https://github.com/0xABADBABE-ops/browser-jet-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/0xABADBABE-ops/browser-jet-pilot/actions/workflows/ci.yml)
 
-**Self-hosted MCP server for AI browser automation. Drop-in @browserbasehq/mcp alternative.**
-
-## What's New
+## Proudly announcing!
 
 ### v1.0.0 — Base Release
 
@@ -15,7 +13,7 @@
 - **Improved CI/CD** — Extended workflow with type checking, linting, testing, and security audits
 - **Bug Fixes** — Fixed SVG/MathML element handling in content extraction, proper browser cleanup on session end, and enhanced type safety
 
-### New Tools
+### Extra tools
 
 - **`browser_disable_shaders`** — Block WebGL, freeze CSS animations, and throttle `requestAnimationFrame` to ~1 FPS for heavy shader-rendered pages
 - **`browser_restore_shaders`** — Restore shader operations (WebGL/RAF require page reload to fully restore)
@@ -508,4 +506,4 @@ interface SkillResult {
 
 MIT
 
-design, written and coded solely by head and <3 for you - 0xabadbabe (Sudo Qt - jet'aime)
+designed, written and coded solely by head and from 💜 for you `0xabadbabe` (Sudo Qt - jet'aime)
