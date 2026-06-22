@@ -22,16 +22,23 @@ describe('format script', () => {
   const projectRoot = process.cwd()
   const prettierConfigPath = join(projectRoot, '.prettierrc.json')
   const prettierIgnorePath = join(projectRoot, '.prettierignore')
-  const tempDir = join(projectRoot, 'tmp-test-files')
+  const tempDir = join(projectRoot, 'tmp-format-test-files')
+  const allTempDirs = [
+    tempDir,
+    join(projectRoot, 'tmp-lint-test-files'),
+    join(projectRoot, 'tmp-typecheck-test-files'),
+  ]
 
   beforeEach(() => {
     // Verify prettier config files exist
     expect(existsSync(prettierConfigPath)).toBe(true)
     expect(existsSync(prettierIgnorePath)).toBe(true)
 
-    // Clean up temp directory before each test to ensure isolation
-    if (existsSync(tempDir)) {
-      rmSync(tempDir, { recursive: true, force: true })
+    // Clean up ALL temp directories before each test for full isolation
+    for (const dir of allTempDirs) {
+      if (existsSync(dir)) {
+        rmSync(dir, { recursive: true, force: true })
+      }
     }
   })
 
@@ -125,7 +132,9 @@ describe('format script', () => {
       writeFileSync(unformattedFile, unformattedCode)
 
       // Check should report code as not formatted
+      const config = await prettier.resolveConfig(unformattedFile)
       const isFormatted = await prettier.check(unformattedCode, {
+        ...config,
         filepath: unformattedFile,
       })
       expect(isFormatted).toBe(false)
@@ -141,7 +150,9 @@ describe('format script', () => {
       writeFileSync(badFile, badCode)
 
       // Check should detect the file is not formatted
+      const config = await prettier.resolveConfig(badFile)
       const isFormatted = await prettier.check(badCode, {
+        ...config,
         filepath: badFile,
       })
       expect(isFormatted).toBe(false)
@@ -156,8 +167,12 @@ describe('format script', () => {
       const badCode = 'const x={a:1,b:2}\nfunction foo( ){return x}\n'
       writeFileSync(testFile, badCode)
 
+      // Resolve project prettier config
+      const config = await prettier.resolveConfig(testFile)
+
       // Should fail check on unformatted code
       const isFormattedBefore = await prettier.check(badCode, {
+        ...config,
         filepath: testFile,
       })
       expect(isFormattedBefore).toBe(false)
@@ -165,6 +180,7 @@ describe('format script', () => {
       // Should succeed after formatting with --write
       // Format the file directly (simulating what prettier --write would do)
       const formattedCode = await prettier.format(badCode, {
+        ...config,
         filepath: testFile,
       })
       expect(formattedCode).not.toBe(badCode)
@@ -172,6 +188,7 @@ describe('format script', () => {
 
       // Now --check should pass
       const isFormattedAfter = await prettier.check(formattedCode, {
+        ...config,
         filepath: testFile,
       })
       expect(isFormattedAfter).toBe(true)
@@ -216,18 +233,18 @@ describe('format script', () => {
   })
 
   describe('formatting consistency', () => {
-    it.each(SOURCE_FILES)('should have %s properly formatted', (file) => {
+    it.each(SOURCE_FILES)('should have %s properly formatted', async (file) => {
       const filePath = join(projectRoot, file)
       expect(existsSync(filePath)).toBe(true)
 
-      // Check file is formatted by running prettier --check on it
-      expect(() => {
-        execSync(`npx prettier --check "${filePath}"`, {
-          cwd: projectRoot,
-          stdio: 'pipe',
-          encoding: 'utf8',
-        })
-      }).not.toThrow()
+      // Check file is formatted using Prettier Node API
+      const code = readFileSync(filePath, 'utf8')
+      const config = await prettier.resolveConfig(filePath)
+      const isFormatted = await prettier.check(code, {
+        ...config,
+        filepath: filePath,
+      })
+      expect(isFormatted).toBe(true)
     })
   })
 
@@ -259,18 +276,18 @@ describe('format script', () => {
   })
 
   describe('README formatting', () => {
-    it('should format markdown files consistently', () => {
+    it('should format markdown files consistently', async () => {
       const readmePath = join(projectRoot, 'README.md')
 
       if (existsSync(readmePath)) {
-        // Check README is formatted
-        expect(() => {
-          execSync(`npx prettier --check "${readmePath}"`, {
-            cwd: projectRoot,
-            stdio: 'pipe',
-            encoding: 'utf8',
-          })
-        }).not.toThrow()
+        // Check README is formatted using Prettier Node API
+        const code = readFileSync(readmePath, 'utf8')
+        const config = await prettier.resolveConfig(readmePath)
+        const isFormatted = await prettier.check(code, {
+          ...config,
+          filepath: readmePath,
+        })
+        expect(isFormatted).toBe(true)
       }
     })
   })

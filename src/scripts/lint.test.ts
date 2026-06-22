@@ -20,11 +20,23 @@ import { SOURCE_FILES, FIXTURES } from './test-utils.js'
 describe('lint script', () => {
   const projectRoot = process.cwd()
   const eslintConfigPath = join(projectRoot, 'eslint.config.js')
-  const tempDir = join(projectRoot, 'tmp-test-files')
+  const tempDir = join(projectRoot, 'tmp-lint-test-files')
+  const allTempDirs = [
+    tempDir,
+    join(projectRoot, 'tmp-format-test-files'),
+    join(projectRoot, 'tmp-typecheck-test-files'),
+  ]
 
   beforeEach(() => {
     // Verify eslint.config.js exists
     expect(existsSync(eslintConfigPath)).toBe(true)
+
+    // Clean up ALL temp directories before each test for full isolation
+    for (const dir of allTempDirs) {
+      if (existsSync(dir)) {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    }
   })
 
   describe('eslint.config.js configuration', () => {

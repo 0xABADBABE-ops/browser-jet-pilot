@@ -40,6 +40,9 @@ tmp/
 temp/
 *.tmp
 .tmp*
+tmp-format-test-files/
+tmp-lint-test-files/
+tmp-typecheck-test-files/
 
 # IDEs
 .vscode/

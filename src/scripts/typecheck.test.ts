@@ -25,11 +25,23 @@ import {
 describe('typecheck script', () => {
   const projectRoot = process.cwd()
   const tsconfigPath = join(projectRoot, 'tsconfig.json')
-  const tempDir = join(projectRoot, 'tmp-test-files')
+  const tempDir = join(projectRoot, 'tmp-typecheck-test-files')
+  const allTempDirs = [
+    tempDir,
+    join(projectRoot, 'tmp-format-test-files'),
+    join(projectRoot, 'tmp-lint-test-files'),
+  ]
 
   beforeEach(() => {
     // Verify tsconfig.json exists
     expect(existsSync(tsconfigPath)).toBe(true)
+
+    // Clean up ALL temp directories before each test for full isolation
+    for (const dir of allTempDirs) {
+      if (existsSync(dir)) {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    }
   })
 
   describe('tsconfig.json configuration', () => {
