@@ -27,6 +27,7 @@
     "docs:dev": "cd docs && mint dev",
     "docs:validate": "cd docs && mint validate",
     "docs:links": "cd docs && mint broken-links",
+    "docs:export": "cd docs && mint export --output ../site.zip",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
