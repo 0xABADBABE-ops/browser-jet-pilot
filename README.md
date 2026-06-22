@@ -323,16 +323,17 @@ node dist/index.js --launch --browser-width 1920 --browser-height 1080
 
 ## How it stacks up to Browserbase MCP
 
-| Feature                  | Browserbase MCP     | Browser Jet Pilot                            |
-| ------------------------ | ------------------- | -------------------------------------------- |
-| Browser hosting          | Browserbase cloud   | Your container 💕                            |
-| Cost                     | Per-session pricing | Free (your infra)                            |
-| `act` (natural language) | Stagehand + LLM     | Use deterministic tools or BrowserAgent      |
-| `observe`                | Stagehand + LLM     | `browser_get_content` + `browser_screenshot` |
-| `extract`                | Stagehand + LLM     | `browser_evaluate` + `browser_get_content`   |
-| Screenshot               | Via Stagehand       | Native `browser_screenshot`                  |
-| Tab management           | Single page         | Multi-tab ✨                                 |
-| Data residency           | Browserbase servers | Your server, your data                       |
+| Feature                  | Browserbase MCP     | Browser Jet Pilot                                        |
+| ------------------------ | ------------------- | -------------------------------------------------------- |
+| Browser hosting          | Browserbase cloud   | Your container 💕                                        |
+| Cost                     | Per-session pricing | Free (your infra)                                        |
+| `act` (natural language) | Stagehand + LLM     | Use deterministic tools or BrowserAgent                  |
+| `observe`                | Stagehand + LLM     | `browser_get_content` + `browser_screenshot`             |
+| `extract`                | Stagehand + LLM     | `browser_evaluate` + `browser_get_content`               |
+| Screenshot               | Via Stagehand       | Native `browser_screenshot`                              |
+| Tab management           | Single page         | Multi-tab ✨                                             |
+| Shader control           | ❌                  | `browser_disable_shaders` / `browser_restore_shaders` ✨ |
+| Data residency           | Browserbase servers | Your server, your data                                   |
 
 ## Architecture
 
