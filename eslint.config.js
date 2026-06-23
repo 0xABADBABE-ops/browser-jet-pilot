@@ -56,6 +56,13 @@ export default [
   },
   prettierConfig,
   {
-    ignores: ['dist/', 'node_modules/', '.qwen/', '.reasonix/', 'docs/'],
+    ignores: [
+      'dist/',
+      'node_modules/',
+      '.qwen/',
+      '.reasonix/',
+      'docs/',
+      'tmp-*-test-files/',
+    ],
   },
 ]
