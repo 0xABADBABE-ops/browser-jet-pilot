@@ -34,6 +34,14 @@ jobs:
         run: |
           find site -name '*.html' -exec sed -i 's|="/_next/|="/browser-jet-pilot/_next/|g' {} +
           find site -name '*.html' -exec sed -i 's|="/images/|="/browser-jet-pilot/images/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/getting-started/|="/browser-jet-pilot/getting-started/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/guides/|="/browser-jet-pilot/guides/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/reference/|="/browser-jet-pilot/reference/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/development/|="/browser-jet-pilot/development/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/llms.txt|="/browser-jet-pilot/llms.txt|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/sitemap.xml|="/browser-jet-pilot/sitemap.xml|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/favicons/|="/browser-jet-pilot/favicons/|g' {} +
+          find site -name '*.html' -exec sed -i 's|href="/"|href="/browser-jet-pilot/"|g' {} +
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
