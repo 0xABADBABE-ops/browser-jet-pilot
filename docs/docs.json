@@ -30,6 +30,14 @@
     "display": "header"
   },
   "navigation": {
+    "anchors": [
+      {
+        "anchor": "Reasonix",
+        "icon": "robot",
+        "href": "https://reasonix.ai",
+        "color": "#a78bfa"
+      }
+    ],
     "groups": [
       {
         "group": "Overview",
