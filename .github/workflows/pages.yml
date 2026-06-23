@@ -41,6 +41,7 @@ jobs:
           find site -name '*.html' -exec sed -i 's|="/llms.txt|="/browser-jet-pilot/llms.txt|g' {} +
           find site -name '*.html' -exec sed -i 's|="/sitemap.xml|="/browser-jet-pilot/sitemap.xml|g' {} +
           find site -name '*.html' -exec sed -i 's|="/favicons/|="/browser-jet-pilot/favicons/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/src/_props/|="/browser-jet-pilot/src/_props/|g' {} +
           find site -name '*.html' -exec sed -i 's|href="/"|href="/browser-jet-pilot/"|g' {} +
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
