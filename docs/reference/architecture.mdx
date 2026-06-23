@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-description: "System architecture for MCP Browser Server, BrowserAgent, BrowserSkill, and MCP clients."
+description: "System architecture for Browser Jet Pilot, BrowserAgent, BrowserSkill, and MCP clients."
 keywords: ["architecture", "mermaid", "mcp", "playwright", "cdp"]
 ---
 
@@ -14,7 +14,7 @@ flowchart LR
     MC["MCP Client<br/>(Claude Desktop, Cursor, etc.)"]
   end
 
-  BS -->|MCP JSON-RPC| MB["MCP Browser Server<br/>(stdio or HTTP)"]
+  BS -->|MCP JSON-RPC| MB["Browser Jet Pilot<br/>(stdio or HTTP)"]
   BA -->|MCP JSON-RPC| MB
   MC -->|MCP JSON-RPC| MB
 

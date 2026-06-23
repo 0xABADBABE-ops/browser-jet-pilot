@@ -1,20 +1,21 @@
 ---
-title: "MCP Browser Server"
-description: "Self-hosted MCP browser automation for teams that want reliable control without hosted browser vendors."
-keywords: ["mcp", "playwright", "browser automation", "cdp", "self-hosted"]
+title: "Browser Jet Pilot"
+description: "Self-hosted MCP server for AI browser automation. Drop-in @browserbasehq/mcp alternative."
+keywords: ["mcp", "playwright", "browser automation", "cdp", "self-hosted", "browserbase"]
 ---
 
 Introduction
 
-MCP Browser Server provides programmatic, reliable control of Chromium browsers. It exposes a compact MCP JSON-RPC toolset—navigation, interaction, extraction, and screenshots—that runs on Playwright and the Chrome DevTools Protocol (CDP). It can connect to an existing browser via CDP or launch a managed browser for isolated runs.
+Browser Jet Pilot provides programmatic, reliable control of Chromium browsers. It exposes a compact MCP JSON-RPC toolset—navigation, interaction, extraction, screenshots, and shader control—that runs on Playwright and the Chrome DevTools Protocol (CDP). It can connect to an existing browser via CDP or launch a managed browser for isolated runs.
 
-If you are replacing hosted browser tooling, the key difference is simple: this server runs on your infrastructure, connects to your browser, and exposes stable tool calls that agent frameworks can trust.
+If you are replacing hosted browser tooling, the key difference is simple: this server runs on your infrastructure, connects to your browser, and exposes stable tool calls that agent frameworks can trust. It's a drop-in replacement for `@browserbasehq/mcp` with no per-session pricing and no cloud dependency.
 
 ## What you get
 
-- Local or remote browser control through CDP
-- HTTP MCP endpoint (`/mcp`) for service-style deployments
-- Deterministic tools for navigation, interaction, extraction, and screenshots
+- Local or remote browser control through CDP (or launch a fresh one)
+- HTTP MCP endpoint (`/mcp`) plus stdio transport
+- 19 deterministic tools for navigation, interaction, extraction, screenshots, and tabs
+- Shader control tools for heavy WebGL pages
 - Optional AI orchestration through `BrowserAgent`
 - Framework-friendly wrapper through `BrowserSkill`
 
@@ -29,7 +30,7 @@ If you are replacing hosted browser tooling, the key difference is simple: this 
 
 The screenshot below was produced by this repository's own tool flow (`browser_start` → `browser_navigate` → `browser_screenshot`).
 
-![Example Domain captured through MCP Browser Server](/images/browser-example-domain-page.png)
+![Example Domain captured through Browser Jet Pilot](/images/browser-example-domain-page.png)
 
 ## Where to go next
 
@@ -40,7 +41,7 @@ The screenshot below was produced by this repository's own tool flow (`browser_s
 
 ## Conclusion
 
-MCP Browser Server is focused on predictable, production-ready browser automation. Validate your setup with the Quickstart and the bundled reliability checks. For CI, prefer deterministic sequences; for application integration, use the BrowserSkill or the agent CLI. Keep API keys and other secrets out of source control and manage browser endpoints through environment variables.
+Browser Jet Pilot is focused on predictable, production-ready browser automation. Validate your setup with the Quickstart and the bundled reliability checks. For CI, prefer deterministic sequences; for application integration, use the BrowserSkill or the agent CLI. Keep API keys and other secrets out of source control and manage browser endpoints through environment variables.
 
 
-design, written and coded solely by head and &lt;3 for you - 0xabadbabe (Sudo Qt - jet'aime)
+design, written and coded solely by head and &lt;3 for you - 0xabadbabe (Sudo Qt - jet&apos;aime)

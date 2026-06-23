@@ -1,12 +1,12 @@
 ---
 title: "Installation"
-description: "Install and build MCP Browser Server from source or npm."
+description: "Install and build Browser Jet Pilot from source or npm."
 keywords: ["installation", "setup", "build", "dependencies"]
 ---
 
 ## Prerequisites
 
-- Node.js 18 or higher
+- Node.js 20.12.0 or higher
 - npm (comes with Node.js)
 - For CDP mode: Chromium with remote debugging enabled
 - For launch mode: Playwright browser binaries
@@ -14,7 +14,7 @@ keywords: ["installation", "setup", "build", "dependencies"]
 ## Install from npm
 
 ```bash
-npm install mcp-browser-server
+npm install browser-jet-pilot
 ```
 
 ## Install from source
@@ -22,8 +22,8 @@ npm install mcp-browser-server
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/0xABADBABE-ops/mcp-browser-server.git
-cd mcp-browser-server
+git clone https://github.com/0xABADBABE-ops/browser-jet-pilot.git
+cd browser-jet-pilot
 npm install
 ```
 
@@ -71,7 +71,7 @@ For Claude Desktop integration, add to your `claude_desktop_config.json`:
   "mcpServers": {
     "browser": {
       "command": "node",
-      "args": ["/absolute/path/to/mcp-browser-server/dist/index.js"],
+      "args": ["/absolute/path/to/browser-jet-pilot/dist/index.js"],
       "env": {
         "CDP_URL": "http://localhost:9222"
       }
@@ -84,8 +84,8 @@ For Claude Desktop integration, add to your `claude_desktop_config.json`:
 
 After building, the package provides two binaries:
 
-- `mcp-browser` - Main MCP server
-- `browser-agent` - BrowserAgent CLI
+- `browser-jet-pilot` - Main MCP server
+- `bjp-agent` - BrowserAgent CLI
 
 These are available globally if you install with `npm install -g` or locally via `npm run agent`.
 

@@ -1,6 +1,6 @@
 ---
 title: "Contributing"
-description: "How to contribute to MCP Browser Server including development workflow and guidelines."
+description: "How to contribute to Browser Jet Pilot including development workflow and guidelines."
 keywords: ["contributing", "pull requests", "development workflow", "guidelines"]
 ---
 
@@ -79,14 +79,10 @@ Include:
 ## What gets checked in CI
 
 All pull requests run through CI which validates:
-- TypeScript build
-- Type checking
-- Linting
-- Tests
-- Security audit
-- Documentation
-- Docker build
-- Reliability checks
+- Type checking (`npm run typecheck`)
+- Linting (`npm run lint`)
+- Formatting (`npm run format:check`)
+- Tests (`npm test`) — 127 tests across 6 files
 
 ## Code style
 

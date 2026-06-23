@@ -21,10 +21,10 @@ npm run lint:fix
 ### ESLint configuration
 
 ESLint is configured in `eslint.config.js` with:
-- TypeScript parser
+- TypeScript parser and plugin
 - Prettier integration
-- Import sorting
-- Recommended rules for Node.js and TypeScript
+- Strict TypeScript rules
+- Relaxed rules for test files
 
 ## Prettier
 
@@ -44,9 +44,10 @@ npm run format:check
 
 Prettier is configured in `.prettierrc.json`:
 - Single quotes
-- No trailing commas
+- No semicolons
 - 2-space indentation
-- 100 character line width
+- ES5 trailing commas
+- 80 character line width
 
 Files to ignore are listed in `.prettierignore`.
 

@@ -1,6 +1,6 @@
 ---
 title: "Docker deployment"
-description: "Build and run MCP Browser Server in Docker with health checks and launch/CDP modes."
+description: "Build and run Browser Jet Pilot in Docker with health checks and launch/CDP modes."
 keywords: ["docker", "compose", "deployment", "healthcheck", "cdp"]
 ---
 
@@ -21,10 +21,10 @@ Expected state:
 ## Run without Compose
 
 ```bash
-docker build -t mcp-browser-server:local .
+docker build -t browser-jet-pilot:local .
 docker run --rm -p 3100:3100 --shm-size=1g \
   -e PORT=3100 -e HOST=0.0.0.0 -e LAUNCH=true \
-  mcp-browser-server:local
+  browser-jet-pilot:local
 ```
 
 ## Connect to external Chromium
@@ -35,7 +35,7 @@ Use this when you already have a browser process you want to control.
 docker run --rm -p 3100:3100 --shm-size=1g \
   -e PORT=3100 -e HOST=0.0.0.0 -e LAUNCH=false \
   -e CDP_URL=http://host.docker.internal:9222 \
-  mcp-browser-server:local
+  browser-jet-pilot:local
 ```
 
 If you are on Linux and `host.docker.internal` is unavailable, add:

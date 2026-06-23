@@ -1,6 +1,6 @@
 ---
 title: "Testing"
-description: "Run tests, coverage reports, and reliability checks for MCP Browser Server."
+description: "Run tests, coverage reports, and reliability checks for Browser Jet Pilot."
 keywords: ["testing", "vitest", "coverage", "reliability checks", "ci"]
 ---
 
@@ -70,21 +70,24 @@ The reliability script runs a deterministic sequence of tool calls and validates
 
 The GitHub Actions CI workflow (`.github/workflows/ci.yml`) runs:
 
-- TypeScript build
-- Type checking
-- Linting
-- Unit tests
-- Security audit
-- Documentation validation
-- Docker build and health checks
-- Reliability suite
+- `npm ci` — clean dependency install
+- `npm run typecheck` — TypeScript type checking
+- `npm run lint` — ESLint code quality
+- `npm run format:check` — Prettier formatting
+- `npm test` — 127 Vitest tests across 6 test files
+
+CI runs on Node.js 20, 22, and 24 via GitHub Actions matrix.
 
 ## Test files
 
 Test files are located alongside source files with `.test.ts` extension:
 
-- `src/session.test.ts` - Session management tests
-- `src/tools/__tests__/index.test.ts` - MCP tool tests
+- `src/session.test.ts` — session management tests
+- `src/tools/__tests__/index.test.ts` — MCP tool tests
+- `src/scripts/codingStyle.test.ts` — coding style compliance
+- `src/scripts/format.test.ts` — Prettier formatting checks
+- `src/scripts/lint.test.ts` — ESLint linting checks
+- `src/scripts/typecheck.test.ts` — TypeScript type safety checks
 
 ## Adding tests
 
@@ -113,4 +116,4 @@ it.only('this test runs alone', async () => {
 
 ## CI test environment
 
-CI runs on Ubuntu with Node.js 20 using GitHub Actions. Tests execute in a Docker environment with full browser automation capabilities.
+CI runs on Ubuntu with Node.js 20, 22, and 24 using GitHub Actions.
