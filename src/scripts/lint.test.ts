@@ -96,7 +96,7 @@ describe('lint script', () => {
 
       // Lint should fail - test with a built-in rule that doesn't require parser
       expect(() => {
-        execSync(`npx eslint "${badLintFile}"`, {
+        execSync(`npx eslint --no-ignore "${badLintFile}"`, {
           cwd: projectRoot,
           stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
@@ -113,7 +113,7 @@ describe('lint script', () => {
       writeFileSync(badFile, 'const unused = 123;\n')
 
       try {
-        execSync(`npx eslint "${badFile}"`, {
+        execSync(`npx eslint --no-ignore "${badFile}"`, {
           cwd: projectRoot,
           stdio: ['ignore', 'pipe', 'pipe'],
         })
@@ -134,7 +134,7 @@ describe('lint script', () => {
       writeFileSync(testFile, 'const unused = 123;\n')
 
       try {
-        execSync(`npx eslint "${testFile}"`, {
+        execSync(`npx eslint --no-ignore "${testFile}"`, {
           cwd: projectRoot,
           stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
