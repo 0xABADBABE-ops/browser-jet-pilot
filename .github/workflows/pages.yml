@@ -30,6 +30,10 @@ jobs:
         run: cd docs && npx mint export --output ../site.zip
       - name: Unpack site
         run: unzip site.zip -d site && rm site.zip
+      - name: Fix asset paths for GitHub Pages project site
+        run: |
+          find site -name '*.html' -exec sed -i 's|="/_next/|="/browser-jet-pilot/_next/|g' {} +
+          find site -name '*.html' -exec sed -i 's|="/images/|="/browser-jet-pilot/images/|g' {} +
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
