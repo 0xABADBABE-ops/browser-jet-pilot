@@ -4,6 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { registerAllTools } from './tools/index.js'
+import { handleWebdavRequest } from './webdav.js'
 import { resolveConfig } from './config.js'
 import { SessionManager } from './session.js'
 import type { ServerConfig } from './types.js'
@@ -153,6 +154,10 @@ async function handleHttpRequest(
       )
       return
     }
+
+    // WebDAV: serve /data over the /webdav mount point
+    const webdavHandled = await handleWebdavRequest(req, res, config.apiKey)
+    if (webdavHandled) return
 
     if (requestUrl.pathname !== '/mcp') {
       res.writeHead(404, { 'content-type': 'text/plain' })
