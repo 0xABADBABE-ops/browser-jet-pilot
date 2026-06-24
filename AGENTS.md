@@ -10,16 +10,16 @@ Browser Jet Pilot is a self-hosted MCP server for browser automation via Playwri
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run build` | Compile TypeScript → `dist/` |
-| `npm run dev` | Dev mode with `tsx` |
-| `npm test` | Run 127-test Vitest suite |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` / `npm run lint:fix` | ESLint |
-| `npm run format` / `npm run format:check` | Prettier |
-| `npm run docs:validate` | Mintlify docs lint |
-| `npm run docs:links` | Check for dead links |
+| Command                                   | Purpose                      |
+| ----------------------------------------- | ---------------------------- |
+| `npm run build`                           | Compile TypeScript → `dist/` |
+| `npm run dev`                             | Dev mode with `tsx`          |
+| `npm test`                                | Run 127-test Vitest suite    |
+| `npm run typecheck`                       | `tsc --noEmit`               |
+| `npm run lint` / `npm run lint:fix`       | ESLint                       |
+| `npm run format` / `npm run format:check` | Prettier                     |
+| `npm run docs:validate`                   | Mintlify docs lint           |
+| `npm run docs:links`                      | Check for dead links         |
 
 **Pre-commit**: Husky + lint-staged auto-runs ESLint + Prettier on staged files.
 
