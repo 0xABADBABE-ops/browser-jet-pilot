@@ -53,6 +53,8 @@ export interface ServerConfig {
   ignoreHTTPSErrors: boolean
   noSandbox: boolean
   corsOrigin?: string
+  /** Capability gates — comma-separated. Supported: cdp, desktop. */
+  capabilities?: string
 }
 
 export interface ToolResult {

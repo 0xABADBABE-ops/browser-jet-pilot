@@ -17,6 +17,7 @@ const configSchema = z.object({
   ignoreHTTPSErrors: z.boolean().default(false),
   noSandbox: z.boolean().default(false),
   corsOrigin: z.string().optional(),
+  capabilities: z.string().optional(),
 })
 
 export function resolveConfig(
@@ -35,6 +36,7 @@ export function resolveConfig(
     ignoreHTTPSErrors: process.env.BROWSER_IGNORE_HTTPS_ERRORS === 'true',
     noSandbox: process.env.BROWSER_NO_SANDBOX === 'true',
     corsOrigin: process.env.CORS_ORIGIN,
+    capabilities: process.env.CAPABILITIES,
   })
 
   return { ...env, ...overrides }
