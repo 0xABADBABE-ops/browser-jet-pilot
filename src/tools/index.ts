@@ -1,11 +1,20 @@
 import { z } from 'zod'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { ElementHandle } from 'playwright'
 import type { SessionManager } from '../session.js'
 import type { ServerConfig } from '../types.js'
 
 function noSession(): never {
   throw new Error('No active session. Call browser_start first.')
+}
+
+const DEFAULT_TIMEOUT = 10000
+const NAVIGATION_TIMEOUT = 30000
+
+/** Get the default session or throw if none exists. */
+function getSession(sessionManager: SessionManager) {
+  const session = sessionManager.getDefaultSession()
+  if (!session) noSession()
+  return session
 }
 
 export function registerAllTools(
@@ -22,12 +31,14 @@ export function registerAllTools(
         'Connect to the browser (or launch a new one). Must be called before any other browser tool. Reuses existing session if still alive.',
     },
     async () => {
-      const session = await sessionManager.ensureSession(
-        config.cdpUrl,
-        config.launch,
-        config.browserWidth,
-        config.browserHeight
-      )
+      const session = await sessionManager.ensureSession({
+        cdpUrl: config.cdpUrl,
+        launch: config.launch,
+        width: config.browserWidth,
+        height: config.browserHeight,
+        ignoreHTTPSErrors: config.ignoreHTTPSErrors,
+        noSandbox: config.noSandbox,
+      })
       return {
         content: [
           {
@@ -77,11 +88,16 @@ export function registerAllTools(
         url: z.string().describe('The URL to navigate to'),
       },
     },
+    /**
+     * Navigate to a URL and wait for domcontentloaded.
+     *
+     * @param url - The URL to navigate to
+     */
     async ({ url }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       await session.page.goto(url, {
         waitUntil: 'domcontentloaded',
-        timeout: 30000,
+        timeout: NAVIGATION_TIMEOUT,
       })
       const title = await session.page.title()
       return {
@@ -101,7 +117,7 @@ export function registerAllTools(
       description: 'Get current page metadata: URL, title, viewport size.',
     },
     async () => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const url = session.page.url()
       const title = await session.page.title()
       const viewport = session.page.viewportSize()
@@ -136,13 +152,20 @@ export function registerAllTools(
           .describe('CSS selector of a specific element to screenshot'),
       },
     },
+    /**
+     * Take a screenshot of the viewport, full page, or a specific element.
+     *
+     * @param fullPage - Capture the full scrollable page
+     * @param selector - CSS selector of element to screenshot
+     */
     async ({ fullPage, selector }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       let buffer: Buffer
       if (selector) {
-        const element = await session.page.$(selector)
-        if (!element) throw new Error(`Element not found: ${selector}`)
-        buffer = await element.screenshot({ type: 'png' })
+        const locator = session.page.locator(selector)
+        const count = await locator.count()
+        if (count === 0) throw new Error(`Element not found: ${selector}`)
+        buffer = await locator.screenshot({ type: 'png' })
       } else {
         buffer = await session.page.screenshot({
           type: 'png',
@@ -171,9 +194,10 @@ export function registerAllTools(
         selector: z.string().describe('CSS selector of the element to click'),
       },
     },
+    /** Click an element identified by a CSS selector. */
     async ({ selector }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
-      await session.page.click(selector, { timeout: 10000 })
+      const session = getSession(sessionManager)
+      await session.page.click(selector, { timeout: DEFAULT_TIMEOUT })
       return {
         content: [{ type: 'text' as const, text: `Clicked: ${selector}` }],
       }
@@ -190,9 +214,10 @@ export function registerAllTools(
         value: z.string().describe('The value to fill in'),
       },
     },
+    /** Clear and fill an input field with a value. */
     async ({ selector, value }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
-      await session.page.fill(selector, value, { timeout: 10000 })
+      const session = getSession(sessionManager)
+      await session.page.fill(selector, value, { timeout: DEFAULT_TIMEOUT })
       return {
         content: [
           { type: 'text' as const, text: `Filled ${selector} with: ${value}` },
@@ -219,9 +244,10 @@ export function registerAllTools(
           .describe('Delay in ms between keystrokes (default: 50)'),
       },
     },
+    /** Type text character by character into an element. */
     async ({ selector, text, delay }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
-      await session.page.click(selector, { timeout: 10000 })
+      const session = getSession(sessionManager)
+      await session.page.click(selector, { timeout: DEFAULT_TIMEOUT })
       await session.page.keyboard.type(text, { delay: delay ?? 50 })
       return {
         content: [
@@ -240,9 +266,12 @@ export function registerAllTools(
         value: z.string().describe('Value of the option to select'),
       },
     },
+    /** Select an option in a <select> dropdown. */
     async ({ selector, value }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
-      await session.page.selectOption(selector, value, { timeout: 10000 })
+      const session = getSession(sessionManager)
+      await session.page.selectOption(selector, value, {
+        timeout: DEFAULT_TIMEOUT,
+      })
       return {
         content: [
           { type: 'text' as const, text: `Selected "${value}" in ${selector}` },
@@ -261,9 +290,10 @@ export function registerAllTools(
           .describe('CSS selector of the element to hover over'),
       },
     },
+    /** Hover the mouse over an element. */
     async ({ selector }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
-      await session.page.hover(selector, { timeout: 10000 })
+      const session = getSession(sessionManager)
+      await session.page.hover(selector, { timeout: DEFAULT_TIMEOUT })
       return {
         content: [{ type: 'text' as const, text: `Hovered over ${selector}` }],
       }
@@ -292,21 +322,23 @@ export function registerAllTools(
           .describe('CSS selector of element to scroll (defaults to page)'),
       },
     },
+    /** Scroll the page or a specific element in a direction. */
     async ({ direction, amount, selector }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const pixels = amount ?? 500
 
       if (selector) {
-        const element = await session.page.$(selector)
-        if (!element) throw new Error(`Element not found: ${selector}`)
+        const locator = session.page.locator(selector)
+        const count = await locator.count()
+        if (count === 0) throw new Error(`Element not found: ${selector}`)
         if (direction === 'top') {
-          await element.evaluate((el) => (el.scrollTop = 0))
+          await locator.evaluate((el) => (el.scrollTop = 0))
         } else if (direction === 'bottom') {
-          await element.evaluate((el) => (el.scrollTop = el.scrollHeight))
+          await locator.evaluate((el) => (el.scrollTop = el.scrollHeight))
         } else if (direction === 'up') {
-          await element.evaluate((el, px) => (el.scrollTop -= px), pixels)
+          await locator.evaluate((el, px) => (el.scrollTop -= px), pixels)
         } else {
-          await element.evaluate((el, px) => (el.scrollTop += px), pixels)
+          await locator.evaluate((el, px) => (el.scrollTop += px), pixels)
         }
       } else {
         if (direction === 'top') {
@@ -342,17 +374,18 @@ export function registerAllTools(
     'browser_evaluate',
     {
       description:
-        'Execute JavaScript code in the browser page. The code runs in the page context. Return a JSON-serializable value.',
+        'Execute JavaScript code in the browser page. The code runs in the page context and has full access to the DOM, cookies, localStorage, and sessionStorage. Return a JSON-serializable value. Warning: this is an arbitrary code execution surface — only use with trusted scripts.',
       inputSchema: {
         script: z
           .string()
           .describe(
-            'JavaScript code to execute. Use arrow function for expressions: () => document.title'
+            'JavaScript code to execute. The script runs with full page privileges. Use arrow function for expressions: () => document.title'
           ),
       },
     },
+    /** Execute JavaScript in the page context and return the result. */
     async ({ script }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const result = await session.page.evaluate(script)
       return {
         content: [
@@ -386,23 +419,36 @@ export function registerAllTools(
           .describe('CSS selector to scope extraction (defaults to full page)'),
       },
     },
+    /** Extract text or HTML content from the page or a selector. */
     async ({ type: contentType, selector }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       let result: string
-      const el = selector ? await session.page.$(selector) : session.page
-      if (!el) throw new Error(`Element not found: ${selector}`)
 
       if (contentType === 'html') {
-        // Use outerHTML for full element, or handle SVG differently
-        result = await (el as ElementHandle<Node>).evaluate((e) => {
-          if (e instanceof HTMLElement) return e.innerHTML
-          return e.toString() // Fallback for SVG/MathML
-        })
+        if (selector) {
+          const locator = session.page.locator(selector)
+          const count = await locator.count()
+          if (count === 0) throw new Error(`Element not found: ${selector}`)
+          result = await locator.evaluate((e) => {
+            if (e instanceof HTMLElement) return e.innerHTML
+            return e.toString() // Fallback for SVG/MathML
+          })
+        } else {
+          result = await session.page.evaluate(
+            () => document.documentElement.innerHTML
+          )
+        }
       } else {
-        // textContent works on all Node types
-        result = await (el as ElementHandle<Node>).evaluate(
-          (e) => e.textContent ?? ''
-        )
+        if (selector) {
+          const locator = session.page.locator(selector)
+          const count = await locator.count()
+          if (count === 0) throw new Error(`Element not found: ${selector}`)
+          result = await locator.evaluate((e) => e.textContent ?? '')
+        } else {
+          result = await session.page.evaluate(
+            () => document.body?.textContent ?? ''
+          )
+        }
       }
 
       if (result.length > 100_000) {
@@ -433,8 +479,9 @@ export function registerAllTools(
           .describe('Throttle requestAnimationFrame to ~1 FPS (default: true)'),
       },
     },
+    /** Inject scripts to block WebGL, throttle rAF, and freeze CSS. */
     async ({ webgl, animations, raf }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const enabled: string[] = []
 
       if (webgl !== false) {
@@ -456,6 +503,10 @@ export function registerAllTools(
         await session.page.evaluate(() => {
           const origRAF = window.requestAnimationFrame.bind(window)
           let lastCall = 0
+          // Use a global Symbol (not a string property) to avoid
+          // enumerating on window and to keep the marker non-enumerable.
+          // Matched by the restore handler via Reflect.has().
+          Reflect.set(window, Symbol.for('__mcp_raf_hooked'), true)
           window.requestAnimationFrame = function (
             cb: FrameRequestCallback
           ): number {
@@ -501,7 +552,7 @@ export function registerAllTools(
         'Restore WebGL, requestAnimationFrame, and CSS animations that were disabled by browser_disable_shaders. Removes the injected style element and restores original browser functions.',
     },
     async () => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
 
       const results = await session.page.evaluate(() => {
         const parts: string[] = []
@@ -513,8 +564,10 @@ export function registerAllTools(
           parts.push('CSS animations restored')
         }
 
-        // RAF is harder to fully restore — reload page is simplest signal
-        if ('__mcp_raf_hooked' in window) {
+        // Check for the global Symbol set by browser_disable_shaders.
+        // Using Reflect.has() because the marker is a non-enumerable Symbol,
+        // not a string property.
+        if (Reflect.has(window, Symbol.for('__mcp_raf_hooked'))) {
           parts.push('RAF hook detected (reload to fully restore)')
         }
 
@@ -557,8 +610,9 @@ export function registerAllTools(
           .describe('Maximum wait time in milliseconds (default: 10000)'),
       },
     },
+    /** Wait for an element to reach a visibility state. */
     async ({ selector, state, timeout }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       await session.page.waitForSelector(selector, {
         state: state ?? 'visible',
         timeout: timeout ?? 10000,
@@ -587,12 +641,16 @@ export function registerAllTools(
           .describe('URL to navigate to in the new tab'),
       },
     },
+    /** Open a new tab and optionally navigate to a URL. */
     async ({ url }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const page = await session.context.newPage()
-      session.page = page
+      session.currentPageIndex = session.context.pages().length - 1
       if (url) {
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: NAVIGATION_TIMEOUT,
+        })
       }
       const title = await page.title()
       return {
@@ -616,7 +674,7 @@ export function registerAllTools(
       description: 'List all open tabs in the current browser session.',
     },
     async () => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const pages = session.context.pages()
       const tabs = await Promise.all(
         pages.map(async (p, i) => {
@@ -647,15 +705,16 @@ export function registerAllTools(
           .describe('Tab index (0-based, as shown by browser_list_tabs)'),
       },
     },
+    /** Switch to a different open tab by index. */
     async ({ index }) => {
-      const session = sessionManager.getDefaultSession() ?? noSession()
+      const session = getSession(sessionManager)
       const pages = session.context.pages()
       if (index < 0 || index >= pages.length) {
         throw new Error(
           `Tab index ${index} out of range (0-${pages.length - 1})`
         )
       }
-      session.page = pages[index]
+      session.currentPageIndex = index
       const title = await session.page.title()
       return {
         content: [

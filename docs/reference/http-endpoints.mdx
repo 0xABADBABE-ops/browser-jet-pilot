@@ -12,16 +12,10 @@ Primary MCP transport endpoint using Streamable HTTP sessions.
 
 ### Authentication
 
-When `API_KEY` is set, requests must include authentication:
+When `API_KEY` is set, requests must include authentication via HTTP header:
 
-**Via HTTP Header (recommended):**
 ```
 X-API-Key: your-secret-key
-```
-
-**Via Query Parameter:**
-```
-/mcp?apiKey=your-secret-key
 ```
 
 **Note:** The `initialize` request (session establishment) is exempt from authentication when no session exists.
@@ -50,23 +44,9 @@ Lightweight health endpoint for container and platform probes.
 
 The health endpoint does not require authentication (for container orchestrators and probes).
 
-## `GET /`
-
-Root endpoint returns basic service information.
-
-### Response
-
-```json
-{
-  "name": "Browser Jet Pilot",
-  "version": "1.0.1",
-  "transport": "http"
-}
-```
-
 ## Status behavior
 
-- `200 OK` for healthy service on `/healthz` and `/`
+- `200 OK` for healthy service on `/healthz`
 - `401 Unauthorized` for invalid or missing API keys (when authentication is enabled)
 - `404 Not Found` for unknown routes
 - MCP JSON-RPC error payloads for malformed `/mcp` requests
@@ -77,8 +57,9 @@ Root endpoint returns basic service information.
 
 ```json
 {
-  "error": "Unauthorized",
-  "message": "Invalid or missing API key"
+  "jsonrpc": "2.0",
+  "error": { "code": -32001, "message": "Unauthorized" },
+  "id": null
 }
 ```
 

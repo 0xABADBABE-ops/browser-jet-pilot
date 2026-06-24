@@ -4,21 +4,38 @@ import {
   type BrowserContext,
   type Page,
 } from 'playwright'
-import type { BrowserSession } from './types.js'
+import { BrowserSession } from './types.js'
+
+/** Options for creating or ensuring a browser session. */
+export interface CreateSessionOptions {
+  cdpUrl: string
+  launch: boolean
+  width: number
+  height: number
+  ignoreHTTPSErrors: boolean
+  noSandbox: boolean
+}
 
 export class SessionManager {
   private sessions: Map<string, BrowserSession> = new Map()
   private defaultSessionId: string | null = null
+  private lruOrder: string[] = []
+  private readonly maxSessions: number
+
+  /**
+   * @param maxSessions - Maximum concurrent sessions before LRU eviction (default: 10)
+   */
+  constructor(maxSessions = 10) {
+    this.maxSessions = maxSessions
+  }
 
   /**
    * Ensure a default browser session exists. Reuses existing if valid.
+   *
+   * @param opts - Session creation options
+   * @returns The active or newly created session
    */
-  async ensureSession(
-    cdpUrl: string,
-    launch: boolean,
-    width: number,
-    height: number
-  ): Promise<BrowserSession> {
+  async ensureSession(opts: CreateSessionOptions): Promise<BrowserSession> {
     // Reuse existing default session if still alive
     if (this.defaultSessionId) {
       const existing = this.sessions.get(this.defaultSessionId)
@@ -29,6 +46,7 @@ export class SessionManager {
             throw new Error('Browser disconnected')
           }
           await existing.page.title()
+          this.touchLRU(this.defaultSessionId)
           return existing
         } catch {
           // Session is dead, clean it up
@@ -37,20 +55,20 @@ export class SessionManager {
       }
     }
 
-    const session = await this.createSession(cdpUrl, launch, width, height)
+    await this.evictIfNeeded()
+    const session = await this.createSession(opts)
     this.defaultSessionId = session.id
     return session
   }
 
   /**
    * Create a new browser session.
+   *
+   * @param opts - Session creation options
+   * @returns The newly created session
    */
-  async createSession(
-    cdpUrl: string,
-    launch: boolean,
-    width: number,
-    height: number
-  ): Promise<BrowserSession> {
+  async createSession(opts: CreateSessionOptions): Promise<BrowserSession> {
+    const { cdpUrl, launch, width, height, ignoreHTTPSErrors, noSandbox } = opts
     let browser: Browser
     let context: BrowserContext
     let page: Page
@@ -60,13 +78,11 @@ export class SessionManager {
       browser = await chromium.launch({
         channel: 'chromium',
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: noSandbox ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
       })
       context = await browser.newContext({
         viewport: { width, height },
-        // Ignore HTTPS errors to improve reliability in environments with
-        // intercepting proxies or self-signed certs.
-        ignoreHTTPSErrors: true,
+        ignoreHTTPSErrors,
       })
     } else {
       // Connect to existing Chromium via CDP
@@ -77,7 +93,7 @@ export class SessionManager {
       } else {
         context = await browser.newContext({
           viewport: { width, height },
-          ignoreHTTPSErrors: true,
+          ignoreHTTPSErrors,
         })
       }
     }
@@ -98,16 +114,53 @@ export class SessionManager {
       }
     }
 
-    const session: BrowserSession = {
-      id: `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    const session = new BrowserSession(
+      `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       browser,
       context,
-      page,
-      createdAt: Date.now(),
-    }
+      0, // initial page index
+      Date.now()
+    )
 
     this.sessions.set(session.id, session)
+    this.lruOrder.push(session.id)
     return session
+  }
+
+  /**
+   * Mark a session as recently used (move to end of LRU list).
+   */
+  private touchLRU(id: string): void {
+    const idx = this.lruOrder.indexOf(id)
+    if (idx !== -1) {
+      this.lruOrder.splice(idx, 1)
+      this.lruOrder.push(id)
+    }
+  }
+
+  /**
+   * Evict the least-recently-used session if at capacity.
+   */
+  private async evictIfNeeded(): Promise<void> {
+    while (this.sessions.size >= this.maxSessions) {
+      // Find the oldest session that isn't the default
+      let evicted = false
+      for (let i = 0; i < this.lruOrder.length && !evicted; i++) {
+        const id = this.lruOrder[i]
+        if (id !== this.defaultSessionId && this.sessions.has(id)) {
+          await this.cleanupSession(id)
+          evicted = true
+        }
+      }
+      // If all sessions are the default (shouldn't happen with cap > 1),
+      // evict the default anyway
+      if (!evicted && this.lruOrder.length > 0) {
+        await this.cleanupSession(this.lruOrder[0])
+        evicted = true
+      }
+      // Safety: break if nothing was evictable
+      if (!evicted) break
+    }
   }
 
   /**
@@ -149,6 +202,8 @@ export class SessionManager {
     }
 
     this.sessions.delete(id)
+    const lruIdx = this.lruOrder.indexOf(id)
+    if (lruIdx !== -1) this.lruOrder.splice(lruIdx, 1)
     if (this.defaultSessionId === id) {
       this.defaultSessionId = null
     }

@@ -19,6 +19,8 @@ keywords: ["configuration", "environment variables", "cli flags", "cdp", "api ke
 | `LAUNCH` | `false` | Whether to launch a browser (`true`) or connect (`false`) |
 | `BROWSER_WIDTH` | `1280` | Browser viewport width |
 | `BROWSER_HEIGHT` | `720` | Browser viewport height |
+| `BROWSER_IGNORE_HTTPS_ERRORS` | `false` | Accept self-signed/invalid TLS certificates |
+| `BROWSER_NO_SANDBOX` | `false` | Disable Chromium sandbox (required in Docker) |
 | `PORT` | unset | Enables HTTP mode when provided |
 | `HOST` | `localhost` | Bind address for HTTP mode |
 
@@ -74,16 +76,10 @@ node dist/index.js --port 3100
 
 ### Provide the API key
 
-Clients can authenticate using either method:
+Clients must authenticate using the HTTP header:
 
-**HTTP Header (recommended):**
 ```
 X-API-Key: your-secret-key
-```
-
-**Query Parameter:**
-```
-http://localhost:3100/mcp?apiKey=your-secret-key
 ```
 
 ### Authentication behavior
@@ -128,4 +124,6 @@ OPENAI_API_KEY=sk-... npm run agent -- --server-url http://localhost:3100/mcp \
 - Enable TLS in production for HTTP mode
 - Restrict network access with firewalls
 - Use strong, randomly generated API keys
+- Keep `BROWSER_NO_SANDBOX=false` when running outside Docker (sandbox is a critical security boundary)
+- Only enable `BROWSER_IGNORE_HTTPS_ERRORS` in trusted environments behind intercepting proxies
 

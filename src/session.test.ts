@@ -39,19 +39,21 @@ describe('SessionManager', () => {
 
       ;(chromium.launch as any).mockResolvedValue(mockBrowser)
 
-      const session = await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      const session = await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
 
       expect(session).toBeDefined()
       expect(session.id).toMatch(/^session_\d+_[a-z0-9]+$/)
       expect(chromium.launch).toHaveBeenCalledWith({
         channel: 'chromium',
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: [],
       })
     })
 
@@ -74,20 +76,24 @@ describe('SessionManager', () => {
       ;(chromium.launch as any).mockResolvedValue(mockBrowser)
 
       // First call
-      await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
 
       // Second call should reuse
-      const session2 = await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      const session2 = await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
 
       expect(chromium.launch).toHaveBeenCalledTimes(1)
       await expect(session2.page.title()).resolves.toBe('Existing Page')
@@ -118,12 +124,14 @@ describe('SessionManager', () => {
 
       ;(chromium.launch as any).mockResolvedValue(mockBrowser)
 
-      const session = await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      const session = await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
       const retrieved = sessionManager.getSession(session.id)
 
       expect(retrieved).toBe(session)
@@ -154,12 +162,14 @@ describe('SessionManager', () => {
 
       ;(chromium.launch as any).mockResolvedValue(mockBrowser)
 
-      await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
       const defaultSession = sessionManager.getDefaultSession()
 
       expect(defaultSession).toBeDefined()
@@ -195,12 +205,14 @@ describe('SessionManager', () => {
 
       ;(chromium.launch as any).mockResolvedValue(mockBrowser)
 
-      const session = await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      const session = await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
       await sessionManager.cleanupSession(session.id)
 
       expect(mockContext.close).toHaveBeenCalled()
@@ -229,12 +241,14 @@ describe('SessionManager', () => {
 
       ;(chromium.launch as any).mockResolvedValue(mockBrowser)
 
-      await sessionManager.ensureSession(
-        'http://localhost:9222',
-        true,
-        1920,
-        1080
-      )
+      await sessionManager.ensureSession({
+        cdpUrl: 'http://localhost:9222',
+        launch: true,
+        width: 1920,
+        height: 1080,
+        ignoreHTTPSErrors: false,
+        noSandbox: false,
+      })
       await sessionManager.cleanupAll()
 
       expect(mockContext.close).toHaveBeenCalled()

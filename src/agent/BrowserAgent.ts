@@ -13,6 +13,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import type { ToolResult } from '../types.js'
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -75,16 +76,6 @@ interface AnthropicToolUseContentBlock {
 type AnthropicContentBlock =
   | AnthropicTextContentBlock
   | AnthropicToolUseContentBlock
-
-interface ToolResult {
-  content: Array<{
-    type: string
-    text?: string
-    data?: string
-    mimeType?: string
-  }>
-  isError?: boolean
-}
 
 export interface StepLog {
   step: number

@@ -13,6 +13,8 @@ services:
       LAUNCH: 'true'
       BROWSER_WIDTH: '1280'
       BROWSER_HEIGHT: '720'
+      BROWSER_IGNORE_HTTPS_ERRORS: 'true'
+      BROWSER_NO_SANDBOX: 'true'
       # To connect to an external Chromium instead of launching one:
       # LAUNCH: "false"
       # CDP_URL: "http://host.docker.internal:9222"

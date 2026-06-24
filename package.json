@@ -38,14 +38,13 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "commander": "^15.0.0",
     "dotenv": "^17.4.2",
     "playwright": "^1.61.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.0.0",
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.62.0",

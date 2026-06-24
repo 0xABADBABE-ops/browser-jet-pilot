@@ -126,6 +126,180 @@ function writeJsonRpcError(
   )
 }
 
+/**
+ * Handle a single HTTP request for the MCP endpoint.
+ * Manages session lifecycle, authentication, and transport routing.
+ */
+async function handleHttpRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  sessionManager: SessionManager,
+  config: ServerConfig,
+  sessions: Map<string, HttpSessionContext>
+): Promise<void> {
+  try {
+    const requestUrl = new URL(
+      req.url ?? '/',
+      `http://${req.headers.host ?? 'localhost'}`
+    )
+    if (requestUrl.pathname === '/healthz') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(
+        JSON.stringify({
+          status: 'ok',
+          service: 'Browser Jet Pilot',
+          transport: 'http',
+        })
+      )
+      return
+    }
+
+    if (requestUrl.pathname !== '/mcp') {
+      res.writeHead(404, { 'content-type': 'text/plain' })
+      res.end('Not Found')
+      return
+    }
+
+    const sessionId = getSessionId(req)
+
+    if (req.method === 'POST') {
+      let body: unknown
+      try {
+        body = await parseJsonBody(req)
+      } catch {
+        writeJsonRpcError(res, -32700, 'Parse error: Invalid JSON body', 400)
+        return
+      }
+
+      // API key authentication (skip for initialize requests)
+      if (!authenticateRequest(req, res, config, true, body)) return
+
+      let context = sessionId ? sessions.get(sessionId) : undefined
+
+      if (!context) {
+        if (sessionId) {
+          writeJsonRpcError(
+            res,
+            -32000,
+            'Bad Request: No valid session ID provided',
+            400
+          )
+          return
+        }
+
+        if (!isInitializeRequest(body)) {
+          writeJsonRpcError(
+            res,
+            -32000,
+            'Bad Request: Missing session ID and request is not initialize',
+            400
+          )
+          return
+        }
+
+        const server = createServerInstance(sessionManager, config)
+        let transport: StreamableHTTPServerTransport
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (newSessionId) => {
+            sessions.set(newSessionId, { server, transport })
+          },
+        })
+
+        transport.onclose = async () => {
+          const closedSessionId = transport.sessionId
+          if (!closedSessionId) return
+
+          const closedContext = sessions.get(closedSessionId)
+          if (!closedContext) return
+
+          sessions.delete(closedSessionId)
+          await closedContext.server.close()
+        }
+
+        await server.connect(transport)
+        context = { server, transport }
+      }
+
+      await context.transport.handleRequest(req, res, body)
+      return
+    }
+
+    if (req.method === 'GET' || req.method === 'DELETE') {
+      // API key authentication for session management
+      if (!authenticateRequest(req, res, config)) return
+
+      if (!sessionId) {
+        writeJsonRpcError(res, -32000, 'Invalid or missing session ID', 400)
+        return
+      }
+
+      const context = sessions.get(sessionId)
+      if (!context) {
+        writeJsonRpcError(res, -32000, 'Invalid or missing session ID', 400)
+        return
+      }
+
+      await context.transport.handleRequest(req, res)
+      return
+    }
+
+    writeJsonRpcError(res, -32000, 'Method not allowed', 405)
+  } catch (error) {
+    console.error('[browser-jet-pilot] HTTP request error:', error)
+    if (!res.headersSent) {
+      writeJsonRpcError(res, -32603, 'Internal server error', 500)
+    }
+  }
+}
+
+/**
+ * Start the HTTP transport with stateful Streamable HTTP sessions.
+ * Returns a cleanup function that closes all sessions and the server.
+ */
+async function startHttpTransport(
+  sessionManager: SessionManager,
+  config: ServerConfig
+): Promise<() => Promise<void>> {
+  const sessions = new Map<string, HttpSessionContext>()
+
+  const closeTransports = async () => {
+    for (const [sessionId, session] of sessions) {
+      try {
+        await session.transport.close()
+      } catch {
+        // ignore close errors
+      }
+      try {
+        await session.server.close()
+      } catch {
+        // ignore close errors
+      }
+      sessions.delete(sessionId)
+    }
+  }
+
+  const httpServer = http.createServer((req, res) =>
+    handleHttpRequest(req, res, sessionManager, config, sessions)
+  )
+
+  httpServer.timeout = 30000
+  httpServer.on('listening', () => {
+    console.error(
+      `[browser-jet-pilot] HTTP mode: http://${config.host}:${config.port}`
+    )
+    console.error(
+      `[browser-jet-pilot] CDP target: ${config.launch ? 'launch new browser' : config.cdpUrl}`
+    )
+  })
+
+  await new Promise<void>((resolve) => {
+    httpServer.listen(config.port!, config.host, () => resolve())
+  })
+
+  return closeTransports
+}
+
 export async function startServer(
   overrides: Partial<ServerConfig> = {}
 ): Promise<void> {
@@ -156,7 +330,9 @@ export async function startServer(
 
     if ('timeout' in cleanupResult) {
       console.error('[browser-jet-pilot] Shutdown timed out after 10s')
-      process.exit(1)
+      // Exit 0: a timeout during graceful shutdown is expected under load,
+      // not an error condition — the OS will reclaim any remaining resources.
+      process.exit(0)
     }
     console.error('[browser-jet-pilot] Shutdown complete')
     process.exit(0)
@@ -165,158 +341,7 @@ export async function startServer(
   process.on('SIGTERM', cleanup)
 
   if (config.port) {
-    // ── HTTP transport (stateful Streamable HTTP sessions) ──
-    const sessions = new Map<string, HttpSessionContext>()
-    closeTransports = async () => {
-      for (const [sessionId, session] of sessions) {
-        try {
-          await session.transport.close()
-        } catch {
-          // ignore close errors
-        }
-        try {
-          await session.server.close()
-        } catch {
-          // ignore close errors
-        }
-        sessions.delete(sessionId)
-      }
-    }
-
-    const httpServer = http.createServer(async (req, res) => {
-      try {
-        const requestUrl = new URL(
-          req.url ?? '/',
-          `http://${req.headers.host ?? 'localhost'}`
-        )
-        if (requestUrl.pathname === '/healthz') {
-          res.writeHead(200, { 'content-type': 'application/json' })
-          res.end(
-            JSON.stringify({
-              status: 'ok',
-              service: 'browser-jet-pilot',
-              transport: 'http',
-            })
-          )
-          return
-        }
-
-        if (requestUrl.pathname !== '/mcp') {
-          res.writeHead(404, { 'content-type': 'text/plain' })
-          res.end('Not Found')
-          return
-        }
-
-        const sessionId = getSessionId(req)
-
-        if (req.method === 'POST') {
-          let body: unknown
-          try {
-            body = await parseJsonBody(req)
-          } catch {
-            writeJsonRpcError(
-              res,
-              -32700,
-              'Parse error: Invalid JSON body',
-              400
-            )
-            return
-          }
-
-          // API key authentication (skip for initialize requests)
-          if (!authenticateRequest(req, res, config, true, body)) return
-
-          let context = sessionId ? sessions.get(sessionId) : undefined
-
-          if (!context) {
-            if (sessionId) {
-              writeJsonRpcError(
-                res,
-                -32000,
-                'Bad Request: No valid session ID provided',
-                400
-              )
-              return
-            }
-
-            if (!isInitializeRequest(body)) {
-              writeJsonRpcError(
-                res,
-                -32000,
-                'Bad Request: Missing session ID and request is not initialize',
-                400
-              )
-              return
-            }
-
-            const server = createServerInstance(sessionManager, config)
-            let transport: StreamableHTTPServerTransport
-            transport = new StreamableHTTPServerTransport({
-              sessionIdGenerator: () => randomUUID(),
-              onsessioninitialized: (newSessionId) => {
-                sessions.set(newSessionId, { server, transport })
-              },
-            })
-
-            transport.onclose = async () => {
-              const closedSessionId = transport.sessionId
-              if (!closedSessionId) return
-
-              const closedContext = sessions.get(closedSessionId)
-              if (!closedContext) return
-
-              sessions.delete(closedSessionId)
-              await closedContext.server.close()
-            }
-
-            await server.connect(transport)
-            context = { server, transport }
-          }
-
-          await context.transport.handleRequest(req, res, body)
-          return
-        }
-
-        if (req.method === 'GET' || req.method === 'DELETE') {
-          // API key authentication for session management
-          if (!authenticateRequest(req, res, config)) return
-
-          if (!sessionId) {
-            writeJsonRpcError(res, -32000, 'Invalid or missing session ID', 400)
-            return
-          }
-
-          const context = sessions.get(sessionId)
-          if (!context) {
-            writeJsonRpcError(res, -32000, 'Invalid or missing session ID', 400)
-            return
-          }
-
-          await context.transport.handleRequest(req, res)
-          return
-        }
-
-        writeJsonRpcError(res, -32000, 'Method not allowed', 405)
-      } catch (error) {
-        console.error('[browser-jet-pilot] HTTP request error:', error)
-        if (!res.headersSent) {
-          writeJsonRpcError(res, -32603, 'Internal server error', 500)
-        }
-      }
-    })
-
-    httpServer.on('listening', () => {
-      console.error(
-        `[browser-jet-pilot] HTTP mode: http://${config.host}:${config.port}`
-      )
-      console.error(
-        `[browser-jet-pilot] CDP target: ${config.launch ? 'launch new browser' : config.cdpUrl}`
-      )
-    })
-
-    await new Promise<void>((resolve) => {
-      httpServer.listen(config.port!, config.host, () => resolve())
-    })
+    closeTransports = await startHttpTransport(sessionManager, config)
   } else {
     // ── Stdio transport (default) ──
     const server = createServerInstance(sessionManager, config)

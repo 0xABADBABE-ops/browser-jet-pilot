@@ -12,6 +12,8 @@ const configSchema = z.object({
   port: z.coerce.number().nullable().default(null),
   host: z.string().default('localhost'),
   apiKey: z.string().optional(),
+  ignoreHTTPSErrors: z.boolean().default(false),
+  noSandbox: z.boolean().default(false),
 })
 
 export function resolveConfig(
@@ -25,6 +27,8 @@ export function resolveConfig(
     port: process.env.PORT || null,
     host: process.env.HOST,
     apiKey: process.env.API_KEY,
+    ignoreHTTPSErrors: process.env.BROWSER_IGNORE_HTTPS_ERRORS === 'true',
+    noSandbox: process.env.BROWSER_NO_SANDBOX === 'true',
   })
 
   return { ...env, ...overrides }

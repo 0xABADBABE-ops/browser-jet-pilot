@@ -44,6 +44,8 @@ describe('browser_navigate tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -142,6 +144,8 @@ describe('browser_click tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -205,6 +209,8 @@ describe('browser_start tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -229,12 +235,14 @@ describe('browser_start tool registration', () => {
 
     const result = await handler()
 
-    expect(mockSessionManager.ensureSession).toHaveBeenCalledWith(
-      'http://localhost:9222',
-      true,
-      1920,
-      1080
-    )
+    expect(mockSessionManager.ensureSession).toHaveBeenCalledWith({
+      cdpUrl: 'http://localhost:9222',
+      launch: true,
+      width: 1920,
+      height: 1080,
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
+    })
     const parsed = JSON.parse(result.content[0].text)
     expect(parsed.sessionId).toBe('test-session-id')
     expect(parsed.message).toBe('Browser launched')
@@ -278,6 +286,8 @@ describe('browser_end tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -346,6 +356,8 @@ describe('browser_get_info tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -421,6 +433,8 @@ describe('browser_screenshot tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -487,11 +501,13 @@ describe('browser_screenshot tool registration', () => {
     const mockElementScreenshot = vi
       .fn()
       .mockResolvedValue(Buffer.from('element-png'))
-    const mockElement = { screenshot: mockElementScreenshot }
-    const mockDollar = vi.fn().mockResolvedValue(mockElement)
+    const mockLocator = vi.fn().mockReturnValue({
+      count: vi.fn().mockResolvedValue(1),
+      screenshot: mockElementScreenshot,
+    })
 
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { screenshot: mockScreenshot, $: mockDollar },
+      page: { screenshot: mockScreenshot, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -501,16 +517,19 @@ describe('browser_screenshot tool registration', () => {
 
     const result = await handler({ selector: '#header' })
 
-    expect(mockDollar).toHaveBeenCalledWith('#header')
+    expect(mockLocator).toHaveBeenCalledWith('#header')
     expect(mockElementScreenshot).toHaveBeenCalledWith({ type: 'png' })
     expect(result.content[0].data).toBe('ZWxlbWVudC1wbmc=')
   })
 
   it('should throw when selector is not found', async () => {
+    const mockLocator = vi.fn().mockReturnValue({
+      count: vi.fn().mockResolvedValue(0),
+    })
     mockSessionManager.getDefaultSession.mockReturnValue({
       page: {
         screenshot: mockScreenshot,
-        $: vi.fn().mockResolvedValue(null),
+        locator: mockLocator,
       },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
@@ -559,6 +578,8 @@ describe('browser_fill tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -636,6 +657,8 @@ describe('browser_type tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -722,6 +745,8 @@ describe('browser_select tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -786,6 +811,8 @@ describe('browser_hover tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -826,13 +853,13 @@ describe('browser_scroll tool registration', () => {
   let mockSessionManager: any
   let mockConfig: ServerConfig
   let mockEvaluate: any
-  let mockDollar: any
+  let mockLocator: any
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     mockEvaluate = vi.fn().mockResolvedValue(undefined)
-    mockDollar = vi.fn()
+    mockLocator = vi.fn()
 
     mockServer = {
       registerTool: vi.fn(),
@@ -849,6 +876,8 @@ describe('browser_scroll tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -870,7 +899,7 @@ describe('browser_scroll tool registration', () => {
 
   it('should scroll page down by default amount', async () => {
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { evaluate: mockEvaluate, $: mockDollar },
+      page: { evaluate: mockEvaluate, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -886,7 +915,7 @@ describe('browser_scroll tool registration', () => {
 
   it('should scroll page up', async () => {
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { evaluate: mockEvaluate, $: mockDollar },
+      page: { evaluate: mockEvaluate, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -900,7 +929,7 @@ describe('browser_scroll tool registration', () => {
 
   it('should scroll page to top', async () => {
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { evaluate: mockEvaluate, $: mockDollar },
+      page: { evaluate: mockEvaluate, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -914,7 +943,7 @@ describe('browser_scroll tool registration', () => {
 
   it('should scroll page to bottom', async () => {
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { evaluate: mockEvaluate, $: mockDollar },
+      page: { evaluate: mockEvaluate, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -927,10 +956,15 @@ describe('browser_scroll tool registration', () => {
   })
 
   it('should scroll element down', async () => {
-    const mockElement = { evaluate: vi.fn().mockResolvedValue(undefined) }
-    mockDollar.mockResolvedValue(mockElement)
+    const mockElement = {
+      evaluate: vi.fn().mockResolvedValue(undefined),
+    }
+    mockLocator.mockReturnValue({
+      ...mockElement,
+      count: vi.fn().mockResolvedValue(1),
+    })
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { evaluate: mockEvaluate, $: mockDollar },
+      page: { evaluate: mockEvaluate, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -939,13 +973,16 @@ describe('browser_scroll tool registration', () => {
     const handler = scrollCall[2]
 
     await handler({ direction: 'down', selector: '#list' })
-    expect(mockElement.evaluate).toHaveBeenCalled()
+    expect(mockLocator).toHaveBeenCalledWith('#list')
   })
 
   it('should throw when scrolled element is not found', async () => {
-    mockDollar.mockResolvedValue(null)
+    mockLocator.mockReturnValue({
+      evaluate: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+    })
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { evaluate: mockEvaluate, $: mockDollar },
+      page: { evaluate: mockEvaluate, locator: mockLocator },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -995,6 +1032,8 @@ describe('browser_evaluate tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1083,6 +1122,8 @@ describe('browser_get_content tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1104,7 +1145,7 @@ describe('browser_get_content tool registration', () => {
   it('should get text content of full page', async () => {
     const mockEvaluate = vi.fn().mockResolvedValue('Page text content')
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { $: vi.fn(), evaluate: mockEvaluate },
+      page: { locator: vi.fn(), evaluate: mockEvaluate },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -1119,12 +1160,12 @@ describe('browser_get_content tool registration', () => {
   })
 
   it('should get text content of a selector element', async () => {
-    const mockElement = {
+    const mockLocator = vi.fn().mockReturnValue({
+      count: vi.fn().mockResolvedValue(1),
       evaluate: vi.fn().mockResolvedValue('Selected text'),
-    }
-    const mockDollar = vi.fn().mockResolvedValue(mockElement)
+    })
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { $: mockDollar, evaluate: vi.fn() },
+      page: { locator: mockLocator, evaluate: vi.fn() },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -1142,7 +1183,7 @@ describe('browser_get_content tool registration', () => {
     const longText = 'x'.repeat(100_001)
     mockSessionManager.getDefaultSession.mockReturnValue({
       page: {
-        $: vi.fn(),
+        locator: vi.fn(),
         evaluate: vi.fn().mockResolvedValue(longText),
       },
     })
@@ -1160,8 +1201,12 @@ describe('browser_get_content tool registration', () => {
   })
 
   it('should throw when selector is not found', async () => {
+    const mockLocator = vi.fn().mockReturnValue({
+      count: vi.fn().mockResolvedValue(0),
+      evaluate: vi.fn(),
+    })
     mockSessionManager.getDefaultSession.mockReturnValue({
-      page: { $: vi.fn().mockResolvedValue(null), evaluate: vi.fn() },
+      page: { locator: mockLocator, evaluate: vi.fn() },
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -1200,6 +1245,8 @@ describe('browser_disable_shaders tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1288,6 +1335,8 @@ describe('browser_restore_shaders tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1352,6 +1401,8 @@ describe('browser_wait_for tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1434,6 +1485,8 @@ describe('browser_new_tab tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1457,12 +1510,16 @@ describe('browser_new_tab tool registration', () => {
       url: vi.fn().mockReturnValue('https://newtab.com'),
       title: vi.fn().mockResolvedValue('New Tab'),
     }
+    const allPages = [mockNewPage]
     const mockSession = {
       context: {
         newPage: vi.fn().mockResolvedValue(mockNewPage),
-        pages: vi.fn().mockReturnValue([{}]),
+        pages: vi.fn(() => allPages),
       },
-      page: null,
+      currentPageIndex: 0,
+      get page() {
+        return allPages[this.currentPageIndex]
+      },
     }
     mockSessionManager.getDefaultSession.mockReturnValue(mockSession)
 
@@ -1480,7 +1537,7 @@ describe('browser_new_tab tool registration', () => {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     })
-    expect(mockSession.page).toBe(mockNewPage)
+    expect(mockSession.currentPageIndex).toBe(0)
     const parsed = JSON.parse(result.content[0].text)
     expect(parsed.url).toBe('https://newtab.com')
   })
@@ -1496,7 +1553,7 @@ describe('browser_new_tab tool registration', () => {
         newPage: vi.fn().mockResolvedValue(mockNewPage),
         pages: vi.fn().mockReturnValue([{}]),
       },
-      page: null,
+      currentPageIndex: 0,
     })
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -1534,6 +1591,8 @@ describe('browser_list_tabs tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1607,6 +1666,8 @@ describe('browser_switch_tab tool registration', () => {
       browserHeight: 1080,
       port: 3100,
       host: 'localhost',
+      ignoreHTTPSErrors: false,
+      noSandbox: false,
     }
   })
 
@@ -1633,11 +1694,15 @@ describe('browser_switch_tab tool registration', () => {
       title: vi.fn().mockResolvedValue('Tab 2'),
       url: vi.fn().mockReturnValue('https://tab2.com'),
     }
+    const allPages = [page1, page2]
     const mockSession = {
       context: {
-        pages: vi.fn().mockReturnValue([page1, page2]),
+        pages: vi.fn(() => allPages),
       },
-      page: page1,
+      currentPageIndex: 0,
+      get page() {
+        return allPages[this.currentPageIndex]
+      },
     }
     mockSessionManager.getDefaultSession.mockReturnValue(mockSession)
 
@@ -1652,7 +1717,7 @@ describe('browser_switch_tab tool registration', () => {
     const result = await handler({ index: 1 })
     const parsed = JSON.parse(result.content[0].text)
 
-    expect(mockSession.page).toBe(page2)
+    expect(mockSession.currentPageIndex).toBe(1)
     expect(parsed.url).toBe('https://tab2.com')
     expect(parsed.index).toBe(1)
   })
