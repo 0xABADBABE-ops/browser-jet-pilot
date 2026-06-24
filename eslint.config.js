@@ -62,6 +62,7 @@ export default [
       '.qwen/',
       '.reasonix/',
       'docs/',
+      'manager/',
       'tmp-*-test-files/',
     ],
   },
