@@ -5,7 +5,7 @@ name: Release
 #   NPM_TOKEN               npm access token (publish to npmjs.org)
 #   DOCKERHUB_USERNAME      Docker Hub username (push to 0xabadbabe/browser-jet-pilot)
 #   DOCKERHUB_TOKEN          Docker Hub access token (or password)
-#   NORTHFLANK_API_TOKEN     Northflank API token (trigger redeploy)
+#   NORTFLANK_API_TOKEN     Northflank API token (trigger redeploy)
 #
 #   Project: jetty-db-mongo   Service: browser-jet-pilot
 #   Image:   0xabadbabe/browser-jet-pilot:mcp (Docker Hub, private)
@@ -146,7 +146,7 @@ jobs:
           curl --fail-with-body -X POST \
             "https://api.northflank.com/v1/projects/jetty-db-mongo/services/browser-jet-pilot/deployment" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.NORTHFLANK_API_TOKEN }}" \
+            -H "Authorization: Bearer ${{ secrets.NORTFLANK_API_TOKEN }}" \
             -d '{"external":{"imagePath":"0xabadbabe/browser-jet-pilot:mcp"},"docker":{"configType":"default"}}'
 
   github-release:
