@@ -6,7 +6,14 @@
  * Mount path: /webdav → serves /data on the NVMe volume.
  */
 import { IncomingMessage, ServerResponse } from 'node:http'
-import { resolve, join, relative, isAbsolute, basename, dirname } from 'node:path'
+import {
+  resolve,
+  join,
+  relative,
+  isAbsolute,
+  basename,
+  dirname,
+} from 'node:path'
 import { timingSafeEqual } from 'node:crypto'
 import {
   readFile,
