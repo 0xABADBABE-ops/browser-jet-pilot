@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2026-06-23
 
 ### Added
+
 - **API Key Authentication** — optional `API_KEY` environment variable gates the HTTP transport; clients authenticate via `X-API-Key` header
 - **Constant-time string comparison** — `crypto.timingSafeEqual` prevents timing attacks on the auth check
 - **`browser_disable_shaders`** — blocks WebGL context creation, freezes CSS animations, and throttles `requestAnimationFrame` to ~1 FPS for heavy shader pages
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plain Docker** — `Dockerfile` with multi-stage build and Playwright Chromium support
 
 ### Changed
+
 - Upgraded MCP SDK to `@modelcontextprotocol/sdk@^1.29.0`
 - Upgraded Playwright to `^1.61.0`
 - Upgraded Zod to `^4.4.3` (v4)
@@ -37,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `bjp-agent` as secondary binary for the BrowserAgent CLI
 
 ### Fixed
+
 - SVG and MathML elements no longer cause `browser_get_content` to return malformed output
 - Browser cleanup now properly terminates all Chromium processes on `browser_end`, including orphaned launch-mode instances
 - Type safety improvements across `SessionManager`, tool handlers, and agent interfaces
@@ -44,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-06-15
 
 ### Added
+
 - **MCP server core** — JSON-RPC 2.0 compliant server with stdio and StreamableHTTP transports
 - **19 deterministic browser tools** — session management, navigation, interaction, observation, and tab control
 - **CDP connection** — connect to existing Chromium via `--remote-debugging-port` using Playwright `connectOverCDP`
