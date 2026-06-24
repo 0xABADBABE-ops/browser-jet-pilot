@@ -117,9 +117,11 @@ describe('browser_navigate tool registration', () => {
     )
     const handler = navigateCall[2]
 
-    await expect(handler({ url: 'https://example.com' })).rejects.toThrow(
-      'No active session'
-    )
+    const result = await handler({ url: 'https://example.com' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ text: expect.stringContaining('No active session') }],
+    })
   })
 })
 
@@ -374,7 +376,11 @@ describe('browser_get_info tool registration', () => {
     const infoCall = calls.find((call: any[]) => call[0] === 'browser_get_info')
     const handler = infoCall[2]
 
-    await expect(handler()).rejects.toThrow('No active session')
+    const result = await handler()
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ text: expect.stringContaining('No active session') }],
+    })
   })
 })
 
@@ -500,9 +506,13 @@ describe('browser_screenshot tool registration', () => {
     const ssCall = calls.find((call: any[]) => call[0] === 'browser_screenshot')
     const handler = ssCall[2]
 
-    await expect(handler({ selector: '#missing' })).rejects.toThrow(
-      'Element not found: #missing'
-    )
+    const result = await handler({ selector: '#missing' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [
+        { text: expect.stringContaining('Element not found: #missing') },
+      ],
+    })
   })
 
   it('should throw when no session exists', async () => {
@@ -513,7 +523,11 @@ describe('browser_screenshot tool registration', () => {
     const ssCall = calls.find((call: any[]) => call[0] === 'browser_screenshot')
     const handler = ssCall[2]
 
-    await expect(handler({})).rejects.toThrow('No active session')
+    const result = await handler({})
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ text: expect.stringContaining('No active session') }],
+    })
   })
 })
 
@@ -581,9 +595,11 @@ describe('browser_fill tool registration', () => {
     const fillCall = calls.find((call: any[]) => call[0] === 'browser_fill')
     const handler = fillCall[2]
 
-    await expect(handler({ selector: '#x', value: 'y' })).rejects.toThrow(
-      'No active session'
-    )
+    const result = await handler({ selector: '#x', value: 'y' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ text: expect.stringContaining('No active session') }],
+    })
   })
 })
 
@@ -907,9 +923,13 @@ describe('browser_scroll tool registration', () => {
     const scrollCall = calls.find((call: any[]) => call[0] === 'browser_scroll')
     const handler = scrollCall[2]
 
-    await expect(
-      handler({ direction: 'down', selector: '#missing' })
-    ).rejects.toThrow('Element not found: #missing')
+    const result = await handler({ direction: 'down', selector: '#missing' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [
+        { text: expect.stringContaining('Element not found: #missing') },
+      ],
+    })
   })
 
   it('should throw when no session exists', async () => {
@@ -920,9 +940,11 @@ describe('browser_scroll tool registration', () => {
     const scrollCall = calls.find((call: any[]) => call[0] === 'browser_scroll')
     const handler = scrollCall[2]
 
-    await expect(handler({ direction: 'down' })).rejects.toThrow(
-      'No active session'
-    )
+    const result = await handler({ direction: 'down' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ text: expect.stringContaining('No active session') }],
+    })
   })
 })
 
@@ -1020,9 +1042,11 @@ describe('browser_evaluate tool registration', () => {
     const evalCall = calls.find((call: any[]) => call[0] === 'browser_evaluate')
     const handler = evalCall[2]
 
-    await expect(handler({ script: '() => 1' })).rejects.toThrow(
-      'No active session'
-    )
+    const result = await handler({ script: '() => 1' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [{ text: expect.stringContaining('No active session') }],
+    })
   })
 })
 
@@ -1134,9 +1158,13 @@ describe('browser_get_content tool registration', () => {
     )
     const handler = contentCall[2]
 
-    await expect(handler({ selector: '#missing' })).rejects.toThrow(
-      'Element not found: #missing'
-    )
+    const result = await handler({ selector: '#missing' })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [
+        { text: expect.stringContaining('Element not found: #missing') },
+      ],
+    })
   })
 })
 
@@ -1601,9 +1629,13 @@ describe('browser_switch_tab tool registration', () => {
     )
     const handler = switchCall[2]
 
-    await expect(handler({ index: 5 })).rejects.toThrow(
-      'Tab index 5 out of range (0-0)'
-    )
+    const result = await handler({ index: 5 })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [
+        { text: expect.stringContaining('Tab index 5 out of range (0-0)') },
+      ],
+    })
   })
 
   it('should throw for negative tab index', async () => {
@@ -1621,8 +1653,14 @@ describe('browser_switch_tab tool registration', () => {
     )
     const handler = switchCall[2]
 
-    await expect(handler({ index: -1 })).rejects.toThrow(
-      'Tab index -1 out of range'
-    )
+    const result = await handler({ index: -1 })
+    expect(result).toMatchObject({
+      isError: true,
+      content: [
+        {
+          text: expect.stringContaining('Tab index -1 out of range'),
+        },
+      ],
+    })
   })
 })

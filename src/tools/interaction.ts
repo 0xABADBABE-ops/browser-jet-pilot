@@ -19,10 +19,22 @@ export function registerInteractionTools(
     },
     /** Click an element identified by a CSS selector. */
     async ({ selector }) => {
-      const session = getSession(sessionManager)
-      await session.page.click(selector, { timeout: DEFAULT_TIMEOUT })
-      return {
-        content: [{ type: 'text' as const, text: `Clicked: ${selector}` }],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.click(selector, { timeout: DEFAULT_TIMEOUT })
+        return {
+          content: [{ type: 'text' as const, text: `Clicked: ${selector}` }],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -39,12 +51,27 @@ export function registerInteractionTools(
     },
     /** Clear and fill an input field with a value. */
     async ({ selector, value }) => {
-      const session = getSession(sessionManager)
-      await session.page.fill(selector, value, { timeout: DEFAULT_TIMEOUT })
-      return {
-        content: [
-          { type: 'text' as const, text: `Filled ${selector} with: ${value}` },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.fill(selector, value, { timeout: DEFAULT_TIMEOUT })
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Filled ${selector} with: ${value}`,
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -69,13 +96,25 @@ export function registerInteractionTools(
     },
     /** Type text character by character into an element. */
     async ({ selector, text, delay }) => {
-      const session = getSession(sessionManager)
-      await session.page.click(selector, { timeout: DEFAULT_TIMEOUT })
-      await session.page.keyboard.type(text, { delay: delay ?? 50 })
-      return {
-        content: [
-          { type: 'text' as const, text: `Typed "${text}" into ${selector}` },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.click(selector, { timeout: DEFAULT_TIMEOUT })
+        await session.page.keyboard.type(text, { delay: delay ?? 50 })
+        return {
+          content: [
+            { type: 'text' as const, text: `Typed "${text}" into ${selector}` },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -91,14 +130,29 @@ export function registerInteractionTools(
     },
     /** Select an option in a <select> dropdown. */
     async ({ selector, value }) => {
-      const session = getSession(sessionManager)
-      await session.page.selectOption(selector, value, {
-        timeout: DEFAULT_TIMEOUT,
-      })
-      return {
-        content: [
-          { type: 'text' as const, text: `Selected "${value}" in ${selector}` },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.selectOption(selector, value, {
+          timeout: DEFAULT_TIMEOUT,
+        })
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Selected "${value}" in ${selector}`,
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -115,10 +169,24 @@ export function registerInteractionTools(
     },
     /** Hover the mouse over an element. */
     async ({ selector }) => {
-      const session = getSession(sessionManager)
-      await session.page.hover(selector, { timeout: DEFAULT_TIMEOUT })
-      return {
-        content: [{ type: 'text' as const, text: `Hovered over ${selector}` }],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.hover(selector, { timeout: DEFAULT_TIMEOUT })
+        return {
+          content: [
+            { type: 'text' as const, text: `Hovered over ${selector}` },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -147,47 +215,59 @@ export function registerInteractionTools(
     },
     /** Scroll the page or a specific element in a direction. */
     async ({ direction, amount, selector }) => {
-      const session = getSession(sessionManager)
-      const pixels = amount ?? 500
+      try {
+        const session = getSession(sessionManager)
+        const pixels = amount ?? 500
 
-      if (selector) {
-        const locator = session.page.locator(selector)
-        const count = await locator.count()
-        if (count === 0) throw new Error(`Element not found: ${selector}`)
-        if (direction === 'top') {
-          await locator.evaluate((el) => (el.scrollTop = 0))
-        } else if (direction === 'bottom') {
-          await locator.evaluate((el) => (el.scrollTop = el.scrollHeight))
-        } else if (direction === 'up') {
-          await locator.evaluate((el, px) => (el.scrollTop -= px), pixels)
+        if (selector) {
+          const locator = session.page.locator(selector)
+          const count = await locator.count()
+          if (count === 0) throw new Error(`Element not found: ${selector}`)
+          if (direction === 'top') {
+            await locator.evaluate((el) => (el.scrollTop = 0))
+          } else if (direction === 'bottom') {
+            await locator.evaluate((el) => (el.scrollTop = el.scrollHeight))
+          } else if (direction === 'up') {
+            await locator.evaluate((el, px) => (el.scrollTop -= px), pixels)
+          } else {
+            await locator.evaluate((el, px) => (el.scrollTop += px), pixels)
+          }
         } else {
-          await locator.evaluate((el, px) => (el.scrollTop += px), pixels)
+          if (direction === 'top') {
+            await session.page.evaluate(() => window.scrollTo(0, 0))
+          } else if (direction === 'bottom') {
+            await session.page.evaluate(() =>
+              window.scrollTo(0, document.body.scrollHeight)
+            )
+          } else if (direction === 'up') {
+            await session.page.evaluate(
+              (px: number) => window.scrollBy(0, -px),
+              pixels
+            )
+          } else {
+            await session.page.evaluate(
+              (px: number) => window.scrollBy(0, px),
+              pixels
+            )
+          }
         }
-      } else {
-        if (direction === 'top') {
-          await session.page.evaluate(() => window.scrollTo(0, 0))
-        } else if (direction === 'bottom') {
-          await session.page.evaluate(() =>
-            window.scrollTo(0, document.body.scrollHeight)
-          )
-        } else if (direction === 'up') {
-          await session.page.evaluate(
-            (px: number) => window.scrollBy(0, -px),
-            pixels
-          )
-        } else {
-          await session.page.evaluate(
-            (px: number) => window.scrollBy(0, px),
-            pixels
-          )
+
+        const desc =
+          direction === 'top' || direction === 'bottom'
+            ? `Scrolled ${direction}`
+            : `Scrolled ${direction} by ${pixels}px`
+        return { content: [{ type: 'text' as const, text: desc }] }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
         }
       }
-
-      const desc =
-        direction === 'top' || direction === 'bottom'
-          ? `Scrolled ${direction}`
-          : `Scrolled ${direction} by ${pixels}px`
-      return { content: [{ type: 'text' as const, text: desc }] }
     }
   )
 }

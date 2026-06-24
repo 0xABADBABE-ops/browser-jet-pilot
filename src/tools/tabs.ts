@@ -22,27 +22,39 @@ export function registerTabTools(
     },
     /** Open a new tab and optionally navigate to a URL. */
     async ({ url }) => {
-      const session = getSession(sessionManager)
-      const page = await session.context.newPage()
-      session.currentPageIndex = session.context.pages().length - 1
-      if (url) {
-        await page.goto(url, {
-          waitUntil: 'domcontentloaded',
-          timeout: NAVIGATION_TIMEOUT,
-        })
-      }
-      const title = await page.title()
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              url: page.url(),
-              title,
-              tabsCount: session.context.pages().length,
-            }),
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        const page = await session.context.newPage()
+        session.currentPageIndex = session.context.pages().length - 1
+        if (url) {
+          await page.goto(url, {
+            waitUntil: 'domcontentloaded',
+            timeout: NAVIGATION_TIMEOUT,
+          })
+        }
+        const title = await page.title()
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                url: page.url(),
+                title,
+                tabsCount: session.context.pages().length,
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -53,23 +65,40 @@ export function registerTabTools(
       description: 'List all open tabs in the current browser session.',
     },
     async () => {
-      const session = getSession(sessionManager)
-      const pages = session.context.pages()
-      const tabs = await Promise.all(
-        pages.map(async (p, i) => {
-          let title: string
-          try {
-            title = await p.title()
-          } catch {
-            title = '(loading)'
-          }
-          return { index: i, url: p.url(), title, isActive: p === session.page }
-        })
-      )
-      return {
-        content: [
-          { type: 'text' as const, text: JSON.stringify(tabs, null, 2) },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        const pages = session.context.pages()
+        const tabs = await Promise.all(
+          pages.map(async (p, i) => {
+            let title: string
+            try {
+              title = await p.title()
+            } catch {
+              title = '(loading)'
+            }
+            return {
+              index: i,
+              url: p.url(),
+              title,
+              isActive: p === session.page,
+            }
+          })
+        )
+        return {
+          content: [
+            { type: 'text' as const, text: JSON.stringify(tabs, null, 2) },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -86,22 +115,34 @@ export function registerTabTools(
     },
     /** Switch to a different open tab by index. */
     async ({ index }) => {
-      const session = getSession(sessionManager)
-      const pages = session.context.pages()
-      if (index < 0 || index >= pages.length) {
-        throw new Error(
-          `Tab index ${index} out of range (0-${pages.length - 1})`
-        )
-      }
-      session.currentPageIndex = index
-      const title = await session.page.title()
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({ url: session.page.url(), title, index }),
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        const pages = session.context.pages()
+        if (index < 0 || index >= pages.length) {
+          throw new Error(
+            `Tab index ${index} out of range (0-${pages.length - 1})`
+          )
+        }
+        session.currentPageIndex = index
+        const title = await session.page.title()
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({ url: session.page.url(), title, index }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )

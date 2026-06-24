@@ -24,19 +24,31 @@ export function registerNavigationTools(
      * @param url - The URL to navigate to
      */
     async ({ url }) => {
-      const session = getSession(sessionManager)
-      await session.page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: NAVIGATION_TIMEOUT,
-      })
-      const title = await session.page.title()
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({ url: session.page.url(), title }),
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: NAVIGATION_TIMEOUT,
+        })
+        const title = await session.page.title()
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({ url: session.page.url(), title }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -47,17 +59,29 @@ export function registerNavigationTools(
       description: 'Get current page metadata: URL, title, viewport size.',
     },
     async () => {
-      const session = getSession(sessionManager)
-      const url = session.page.url()
-      const title = await session.page.title()
-      const viewport = session.page.viewportSize()
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({ url, title, viewport }, null, 2),
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        const url = session.page.url()
+        const title = await session.page.title()
+        const viewport = session.page.viewportSize()
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({ url, title, viewport }, null, 2),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )

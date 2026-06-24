@@ -1,5 +1,5 @@
 import { readFile, readdir, mkdir, unlink, writeFile } from 'fs/promises'
-import { join, resolve } from 'path'
+import { join, resolve, dirname } from 'path'
 import { z } from 'zod'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { SessionManager } from '../session.js'
@@ -26,22 +26,34 @@ export function registerPersistenceTools(
       },
     },
     async ({ filename }) => {
-      const session = getSession(sessionManager)
-      const ctx = session.context
-      const cookies = await ctx.cookies()
-      const path = join(DATA_DIR, filename ?? 'cookies.json')
-      await writeFile(path, JSON.stringify(cookies, null, 2), 'utf-8')
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              saved: cookies.length,
-              path,
-              message: `${cookies.length} cookies saved to ${path}`,
-            }),
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        const ctx = session.context
+        const cookies = await ctx.cookies()
+        const path = join(DATA_DIR, filename ?? 'cookies.json')
+        await writeFile(path, JSON.stringify(cookies, null, 2), 'utf-8')
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                saved: cookies.length,
+                path,
+                message: `${cookies.length} cookies saved to ${path}`,
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -61,27 +73,39 @@ export function registerPersistenceTools(
       },
     },
     async ({ filename }) => {
-      const session = getSession(sessionManager)
-      const path = join(DATA_DIR, filename ?? 'cookies.json')
-      const raw = await readFile(path, 'utf-8')
-      const cookies = JSON.parse(raw) as Array<{
-        name: string
-        value: string
-        domain: string
-        path: string
-      }>
-      await session.context.addCookies(cookies)
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              loaded: cookies.length,
-              path,
-              message: `${cookies.length} cookies loaded from ${path}`,
-            }),
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        const path = join(DATA_DIR, filename ?? 'cookies.json')
+        const raw = await readFile(path, 'utf-8')
+        const cookies = JSON.parse(raw) as Array<{
+          name: string
+          value: string
+          domain: string
+          path: string
+        }>
+        await session.context.addCookies(cookies)
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                loaded: cookies.length,
+                path,
+                message: `${cookies.length} cookies loaded from ${path}`,
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -102,56 +126,68 @@ export function registerPersistenceTools(
       },
     },
     async ({ url, filename }) => {
-      const session = getSession(sessionManager)
-      await mkdir(DOWNLOADS_DIR, { recursive: true })
+      try {
+        const session = getSession(sessionManager)
+        await mkdir(DOWNLOADS_DIR, { recursive: true })
 
-      const name = filename ?? url.split('/').pop() ?? 'download'
-      const dest = join(DOWNLOADS_DIR, name)
+        const name = filename ?? url.split('/').pop() ?? 'download'
+        const dest = join(DOWNLOADS_DIR, name)
 
-      // Fetch the file bytes in the page context, return as base64
-      const result = await session.page.evaluate(
-        async ({ url: fetchUrl }: { url: string }) => {
-          const resp = await fetch(fetchUrl)
-          if (!resp.ok)
-            return {
-              error: `HTTP ${resp.status}: ${resp.statusText}`,
-            } as const
-          const blob = await resp.blob()
-          const reader = new FileReader()
-          return new Promise<
-            { error: string } | { data: string; size: number; type: string }
-          >((resolve) => {
-            reader.onloadend = () =>
-              resolve({
-                data: reader.result as string,
-                size: blob.size,
-                type: blob.type,
-              })
-            reader.readAsDataURL(blob)
-          })
-        },
-        { url }
-      )
-
-      if ('error' in result) {
-        throw new Error(result.error)
-      }
-
-      const base64 = result.data.split(',')[1]
-      const buf = Buffer.from(base64, 'base64')
-      await writeFile(dest, buf)
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              path: dest,
-              size: result.size,
-              type: result.type,
-              message: `Downloaded ${result.size} bytes to ${dest}`,
-            }),
+        // Fetch the file bytes in the page context, return as base64
+        const result = await session.page.evaluate(
+          async ({ url: fetchUrl }: { url: string }) => {
+            const resp = await fetch(fetchUrl)
+            if (!resp.ok)
+              return {
+                error: `HTTP ${resp.status}: ${resp.statusText}`,
+              } as const
+            const blob = await resp.blob()
+            const reader = new FileReader()
+            return new Promise<
+              { error: string } | { data: string; size: number; type: string }
+            >((resolve) => {
+              reader.onloadend = () =>
+                resolve({
+                  data: reader.result as string,
+                  size: blob.size,
+                  type: blob.type,
+                })
+              reader.readAsDataURL(blob)
+            })
           },
-        ],
+          { url }
+        )
+
+        if ('error' in result) {
+          throw new Error(result.error)
+        }
+
+        const base64 = result.data.split(',')[1]
+        const buf = Buffer.from(base64, 'base64')
+        await writeFile(dest, buf)
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                path: dest,
+                size: result.size,
+                type: result.type,
+                message: `Downloaded ${result.size} bytes to ${dest}`,
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -171,31 +207,43 @@ export function registerPersistenceTools(
       },
     },
     async ({ subdir }) => {
-      const dir = subdir ? join(DATA_DIR, subdir) : DATA_DIR
-      let entries: import('fs').Dirent[]
       try {
-        entries = await readdir(dir, { withFileTypes: true })
-      } catch {
+        const dir = subdir ? join(DATA_DIR, subdir) : DATA_DIR
+        let entries: import('fs').Dirent[]
+        try {
+          entries = await readdir(dir, { withFileTypes: true })
+        } catch {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify({ path: dir, entries: [] }),
+              },
+            ],
+          }
+        }
+        const listing = entries.map((e) => ({
+          name: e.name,
+          type: e.isDirectory() ? 'directory' : 'file',
+        }))
         return {
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify({ path: dir, entries: [] }),
+              text: JSON.stringify({ path: dir, entries: listing }, null, 2),
             },
           ],
         }
-      }
-      const listing = entries.map((e) => ({
-        name: e.name,
-        type: e.isDirectory() ? 'directory' : 'file',
-      }))
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({ path: dir, entries: listing }, null, 2),
-          },
-        ],
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -220,19 +268,31 @@ export function registerPersistenceTools(
       },
     },
     async ({ path: relPath, encoding }) => {
-      const fullPath = resolve(DATA_DIR, relPath)
-      // Prevent path traversal outside /data
-      if (!fullPath.startsWith(DATA_DIR)) {
-        throw new Error(`Path traversal detected: ${relPath}`)
-      }
-      const content: string = await readFile(fullPath, encoding ?? 'utf-8')
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: content.slice(0, 100_000),
-          },
-        ],
+      try {
+        const fullPath = resolve(DATA_DIR, relPath)
+        // Prevent path traversal outside /data
+        if (!fullPath.startsWith(DATA_DIR)) {
+          throw new Error(`Path traversal detected: ${relPath}`)
+        }
+        const content: string = await readFile(fullPath, encoding ?? 'utf-8')
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: content.slice(0, 100_000),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -258,29 +318,41 @@ export function registerPersistenceTools(
       },
     },
     async ({ path: relPath, content, encoding }) => {
-      const fullPath = resolve(DATA_DIR, relPath)
-      if (!fullPath.startsWith(DATA_DIR)) {
-        throw new Error(`Path traversal detected: ${relPath}`)
-      }
-      await mkdir(join(fullPath, '..'), { recursive: true })
+      try {
+        const fullPath = resolve(DATA_DIR, relPath)
+        if (!fullPath.startsWith(DATA_DIR)) {
+          throw new Error(`Path traversal detected: ${relPath}`)
+        }
+        await mkdir(dirname(fullPath), { recursive: true })
 
-      if (encoding === 'base64') {
-        await writeFile(fullPath, Buffer.from(content, 'base64'))
-      } else {
-        await writeFile(fullPath, content, 'utf-8')
-      }
+        if (encoding === 'base64') {
+          await writeFile(fullPath, Buffer.from(content, 'base64'))
+        } else {
+          await writeFile(fullPath, content, 'utf-8')
+        }
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              path: fullPath,
-              size: content.length,
-              message: `Written ${content.length} chars to ${fullPath}`,
-            }),
-          },
-        ],
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                path: fullPath,
+                size: content.length,
+                message: `Written ${content.length} chars to ${fullPath}`,
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -299,21 +371,33 @@ export function registerPersistenceTools(
       },
     },
     async ({ path: relPath }) => {
-      const fullPath = resolve(DATA_DIR, relPath)
-      if (!fullPath.startsWith(DATA_DIR)) {
-        throw new Error(`Path traversal detected: ${relPath}`)
-      }
-      await unlink(fullPath)
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              deleted: fullPath,
-              message: `Deleted ${fullPath}`,
-            }),
-          },
-        ],
+      try {
+        const fullPath = resolve(DATA_DIR, relPath)
+        if (!fullPath.startsWith(DATA_DIR)) {
+          throw new Error(`Path traversal detected: ${relPath}`)
+        }
+        await unlink(fullPath)
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({
+                deleted: fullPath,
+                message: `Deleted ${fullPath}`,
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )

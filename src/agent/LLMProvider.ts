@@ -185,7 +185,10 @@ export function createAnthropicProvider(): LLMProvider {
 
 // ── Provider factory ───────────────────────────────────────
 
-/** Resolve a provider name to an LLMProvider instance. */
+/** Resolve a provider name to an LLMProvider instance.
+ *  If the model name contains "claude", the Anthropic provider is
+ *  used regardless of the `provider` argument — this preserves
+ *  the auto-detection behavior from the original BrowserAgent. */
 export function resolveProvider(provider: string, model: string): LLMProvider {
   if (provider === 'anthropic' || model.includes('claude')) {
     return createAnthropicProvider()

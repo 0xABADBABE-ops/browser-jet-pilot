@@ -163,7 +163,15 @@ async function streamToFile(
         dest.destroy()
         throw new Error('File too large')
       }
-      dest.write(chunk)
+      const ok = dest.write(chunk)
+      if (!ok) {
+        // Backpressure: wait for the kernel to drain before reading
+        // more chunks, so we don't buffer the entire upload in memory.
+        await new Promise<void>((resolve, reject) => {
+          dest.once('drain', resolve)
+          dest.once('error', reject)
+        })
+      }
     }
   } catch (err) {
     dest.destroy()

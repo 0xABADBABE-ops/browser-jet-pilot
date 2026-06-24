@@ -34,27 +34,39 @@ export function registerObservationTools(
      * @param selector - CSS selector of element to screenshot
      */
     async ({ fullPage, selector }) => {
-      const session = getSession(sessionManager)
-      let buffer: Buffer
-      if (selector) {
-        const locator = session.page.locator(selector)
-        const count = await locator.count()
-        if (count === 0) throw new Error(`Element not found: ${selector}`)
-        buffer = await locator.screenshot({ type: 'png' })
-      } else {
-        buffer = await session.page.screenshot({
-          type: 'png',
-          fullPage: fullPage ?? false,
-        })
-      }
-      return {
-        content: [
-          {
-            type: 'image' as const,
-            data: buffer.toString('base64'),
-            mimeType: 'image/png',
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        let buffer: Buffer
+        if (selector) {
+          const locator = session.page.locator(selector)
+          const count = await locator.count()
+          if (count === 0) throw new Error(`Element not found: ${selector}`)
+          buffer = await locator.screenshot({ type: 'png' })
+        } else {
+          buffer = await session.page.screenshot({
+            type: 'png',
+            fullPage: fullPage ?? false,
+          })
+        }
+        return {
+          content: [
+            {
+              type: 'image' as const,
+              data: buffer.toString('base64'),
+              mimeType: 'image/png',
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
@@ -74,32 +86,44 @@ export function registerObservationTools(
     },
     /** Execute JavaScript in the page context and return the result. */
     async ({ script }) => {
-      if (!config.allowEvaluate) {
+      try {
+        if (!config.allowEvaluate) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify({
+                  error:
+                    'browser_evaluate is disabled. Set ALLOW_EVALUATE=true to enable arbitrary JavaScript execution.',
+                }),
+              },
+            ],
+            isError: true,
+          }
+        }
+        const session = getSession(sessionManager)
+        const result = await session.page.evaluate(script)
         return {
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify({
-                error:
-                  'browser_evaluate is disabled. Set ALLOW_EVALUATE=true to enable arbitrary JavaScript execution.',
-              }),
+              text:
+                typeof result === 'string'
+                  ? result
+                  : JSON.stringify(result, null, 2),
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
             },
           ],
           isError: true,
         }
-      }
-      const session = getSession(sessionManager)
-      const result = await session.page.evaluate(script)
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text:
-              typeof result === 'string'
-                ? result
-                : JSON.stringify(result, null, 2),
-          },
-        ],
       }
     }
   )
@@ -124,41 +148,53 @@ export function registerObservationTools(
     },
     /** Extract text or HTML content from the page or a selector. */
     async ({ type: contentType, selector }) => {
-      const session = getSession(sessionManager)
-      let result: string
+      try {
+        const session = getSession(sessionManager)
+        let result: string
 
-      if (contentType === 'html') {
-        if (selector) {
-          const locator = session.page.locator(selector)
-          const count = await locator.count()
-          if (count === 0) throw new Error(`Element not found: ${selector}`)
-          result = await locator.evaluate((e) => {
-            if (e instanceof HTMLElement) return e.innerHTML
-            return e.toString() // Fallback for SVG/MathML
-          })
+        if (contentType === 'html') {
+          if (selector) {
+            const locator = session.page.locator(selector)
+            const count = await locator.count()
+            if (count === 0) throw new Error(`Element not found: ${selector}`)
+            result = await locator.evaluate((e) => {
+              if (e instanceof HTMLElement) return e.innerHTML
+              return e.toString() // Fallback for SVG/MathML
+            })
+          } else {
+            result = await session.page.evaluate(
+              () => document.documentElement.innerHTML
+            )
+          }
         } else {
-          result = await session.page.evaluate(
-            () => document.documentElement.innerHTML
-          )
+          if (selector) {
+            const locator = session.page.locator(selector)
+            const count = await locator.count()
+            if (count === 0) throw new Error(`Element not found: ${selector}`)
+            result = await locator.evaluate((e) => e.textContent ?? '')
+          } else {
+            result = await session.page.evaluate(
+              () => document.body?.textContent ?? ''
+            )
+          }
         }
-      } else {
-        if (selector) {
-          const locator = session.page.locator(selector)
-          const count = await locator.count()
-          if (count === 0) throw new Error(`Element not found: ${selector}`)
-          result = await locator.evaluate((e) => e.textContent ?? '')
-        } else {
-          result = await session.page.evaluate(
-            () => document.body?.textContent ?? ''
-          )
+
+        if (result.length > 100_000) {
+          result = result.slice(0, 100_000) + '\n... [truncated]'
+        }
+
+        return { content: [{ type: 'text' as const, text: result }] }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
         }
       }
-
-      if (result.length > 100_000) {
-        result = result.slice(0, 100_000) + '\n... [truncated]'
-      }
-
-      return { content: [{ type: 'text' as const, text: result }] }
     }
   )
 
@@ -183,18 +219,30 @@ export function registerObservationTools(
     },
     /** Wait for an element to reach a visibility state. */
     async ({ selector, state, timeout }) => {
-      const session = getSession(sessionManager)
-      await session.page.waitForSelector(selector, {
-        state: state ?? 'visible',
-        timeout: timeout ?? 10000,
-      })
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `${selector} is now ${state ?? 'visible'}.`,
-          },
-        ],
+      try {
+        const session = getSession(sessionManager)
+        await session.page.waitForSelector(selector, {
+          state: state ?? 'visible',
+          timeout: timeout ?? 10000,
+        })
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `${selector} is now ${state ?? 'visible'}.`,
+            },
+          ],
+        }
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        }
       }
     }
   )
