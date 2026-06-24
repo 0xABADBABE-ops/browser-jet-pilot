@@ -1,0 +1,264 @@
+---
+title: "Integrations"
+description: "Connect Browser Jet Pilot to Claude Desktop, Cursor, Windsurf, Cline, and VS Code MCP extension with ready-to-paste configurations."
+keywords: ["claude desktop", "cursor", "windsurf", "cline", "vs code", "mcp client", "configuration"]
+---
+
+Browser Jet Pilot speaks standard MCP over stdio and HTTP. Any MCP-compatible client can connect — here are the configs for the popular ones.
+
+## Prerequisites
+
+1. Build the project: `npm run build`
+2. Have Chromium running with CDP, or use launch mode (see [/getting-started/quickstart](/getting-started/quickstart))
+
+All configurations below assume the project is cloned at `/home/user/browser-jet-pilot`. Replace with your actual path.
+
+---
+
+## Claude Desktop
+
+Claude Desktop uses stdio transport. Edit your config file:
+
+| Platform | Path |
+|----------|------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
+
+```json title="claude_desktop_config.json"
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "command": "node",
+      "args": ["/home/user/browser-jet-pilot/dist/index.js"],
+      "env": {
+        "CDP_URL": "http://localhost:9222"
+      }
+    }
+  }
+}
+```
+
+### With launch mode (no external Chromium needed)
+
+```json
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "command": "node",
+      "args": ["/home/user/browser-jet-pilot/dist/index.js"],
+      "env": {
+        "LAUNCH": "true"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop after editing. You'll see the 19 browser tools available in the tools panel.
+
+---
+
+## Cursor
+
+Cursor supports MCP servers natively. Open Settings → MCP and add:
+
+```json title="Cursor MCP config"
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "command": "node",
+      "args": ["/home/user/browser-jet-pilot/dist/index.js"],
+      "env": {
+        "CDP_URL": "http://localhost:9222"
+      }
+    }
+  }
+}
+```
+
+Or use HTTP transport if you have the server running remotely:
+
+```json
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "type": "http",
+      "url": "http://localhost:3100/mcp"
+    }
+  }
+}
+```
+
+### With API key authentication
+
+If your server has `API_KEY` set, pass it in the URL or configure it in Cursor's MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "type": "http",
+      "url": "http://localhost:3100/mcp",
+      "headers": {
+        "X-API-Key": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Windsurf (Codeium)
+
+Windsurf supports MCP through its `~/.codeium/windsurf/mcp_config.json` file:
+
+```json title="~/.codeium/windsurf/mcp_config.json"
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "command": "node",
+      "args": ["/home/user/browser-jet-pilot/dist/index.js"],
+      "env": {
+        "CDP_URL": "http://localhost:9222"
+      }
+    }
+  }
+}
+```
+
+Restart Windsurf after saving.
+
+---
+
+## Cline
+
+Cline connects to MCP servers via stdio. In Cline's settings, add a new MCP server:
+
+1. Open Cline in VS Code
+2. Navigate to **Settings → MCP Servers**
+3. Click **Add MCP Server**
+4. Select **Command** type
+
+```json
+{
+  "name": "browser-jet-pilot",
+  "command": "node",
+  "args": ["/home/user/browser-jet-pilot/dist/index.js"],
+  "env": {
+    "CDP_URL": "http://localhost:9222"
+  }
+}
+```
+
+Cline will now have access to all 19 browser tools. Use `browser_start` first, then chain navigation and extraction calls.
+
+---
+
+## VS Code MCP Extension
+
+If you're using the official MCP extension for VS Code (or any extension that reads `.vscode/mcp.json`):
+
+Create or edit `.vscode/mcp.json` in your workspace:
+
+```json title=".vscode/mcp.json"
+{
+  "servers": {
+    "browser-jet-pilot": {
+      "command": "node",
+      "args": ["/home/user/browser-jet-pilot/dist/index.js"],
+      "env": {
+        "CDP_URL": "http://localhost:9222"
+      }
+    }
+  }
+}
+```
+
+Reload the VS Code window to pick up the new server.
+
+---
+
+## npx (no local clone)
+
+If you publish to npm, users can skip cloning entirely:
+
+```json
+{
+  "mcpServers": {
+    "browser-jet-pilot": {
+      "command": "npx",
+      "args": ["browser-jet-pilot"],
+      "env": {
+        "CDP_URL": "http://localhost:9222"
+      }
+    }
+  }
+}
+```
+
+This pulls the package from the registry and runs it directly. Requires `npm publish` (see below).
+
+---
+
+## Publishing to npm
+
+Once published, anyone can install via npm and the `npx` config above becomes the simplest onboarding path.
+
+```bash
+# One-time: log in
+npm login
+
+# Build and publish
+npm run build
+npm publish
+```
+
+The `package.json` already has the correct `files`, `bin`, `exports`, and `engines` fields configured.
+
+### Scoped publish
+
+If you want to publish under your org scope:
+
+```bash
+# package.json: "name": "@0xabadbabe-ops/browser-jet-pilot"
+npm publish --access public
+```
+
+Then the `npx` command becomes `npx @0xabadbabe-ops/browser-jet-pilot`.
+
+---
+
+## Quick verification
+
+After configuring any client, verify the connection works by asking it to:
+
+> "Run browser_start, then browser_navigate to https://example.com, then browser_screenshot, then browser_end."
+
+If you get a screenshot of example.com back, everything is wired correctly.
+
+## Troubleshooting
+
+### "Server not responding" in Claude Desktop
+
+- Check the path in `args` is absolute and points to `dist/index.js` (not `src/index.ts`)
+- Verify you ran `npm run build` before configuring
+- Claude Desktop logs MCP server output — check `~/Library/Logs/Claude/` on macOS
+
+### Tools don't appear in Cursor/Windsurf
+
+- Restart the editor after adding the MCP config
+- Check the editor's output panel for MCP connection errors
+- Ensure Node.js >= 20.12.0 is available in the editor's PATH
+
+### CDP connection refused
+
+- Confirm Chromium is running with `--remote-debugging-port=9222`
+- Verify the port isn't blocked by a firewall
+- In Docker, use `host.docker.internal:9222` as the CDP URL, not `localhost`
+
+### "Module not found" errors
+
+- The project uses `"type": "module"` — ensure you're running Node 20+ with ESM support
+- Delete `node_modules` and run `npm install` to refresh dependencies

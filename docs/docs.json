@@ -49,7 +49,7 @@
       },
       {
         "group": "Guides",
-        "pages": ["guides/agent-and-skill", "guides/reliability-checks"]
+        "pages": ["guides/integrations", "guides/agent-and-skill", "guides/reliability-checks"]
       },
       {
         "group": "Reference",
