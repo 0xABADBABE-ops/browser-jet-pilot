@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-Browser Jet Pilot is a self-hosted MCP server for browser automation via Playwright + CDP. It exposes 19 deterministic tools through JSON-RPC 2.0 (stdio and HTTP transports), with an optional AI agent layer (BrowserAgent) and skill interface (BrowserSkill).
+Browser Jet Pilot is a self-hosted MCP server for browser automation via Playwright + CDP. It exposes 26 deterministic tools through JSON-RPC 2.0 (stdio and HTTP transports), with an optional AI agent layer (BrowserAgent) and skill interface (BrowserSkill).
 
 ## Commands
 
