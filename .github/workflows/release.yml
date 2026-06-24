@@ -1,5 +1,30 @@
 name: Release
 
+# ── Required GitHub Secrets ──────────────────────────────────
+#
+#   NPM_TOKEN               npm access token (publish to npmjs.org)
+#   DOCKERHUB_USERNAME      Docker Hub username (push to 0xabadbabe/browser-jet-pilot)
+#   DOCKERHUB_TOKEN          Docker Hub access token (or password)
+#   NORTHFLANK_API_TOKEN     Northflank API token (trigger redeploy)
+#
+#   Project: jetty-db-mongo   Service: browser-jet-pilot
+#   Image:   0xabadbabe/browser-jet-pilot:mcp (Docker Hub, private)
+#
+# ── Local Release Flow ───────────────────────────────────────
+#
+#   1. npm run build              # production build
+#   2. git add -A && git commit   # commit everything
+#   3. git tag v1.0.2             # create version tag
+#   4. git push && git push --tags# push to GitHub
+#
+#   On tag push, this workflow:
+#     test → npm-publish ──────────────────────┐
+#          → docker-ghcr (GHCR)                ├─→ github-release
+#          → docker-hub (0xabadbabe, tag:mcp) ─┤
+#            → northflank-deploy               │
+#                                              ┘
+# ─────────────────────────────────────────────────────────────
+
 on:
   push:
     tags:
@@ -43,7 +68,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  docker-publish:
+  docker-ghcr:
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -78,8 +103,54 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  docker-hub:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: 0xabadbabe/browser-jet-pilot
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=mcp
+            type=raw,value=latest
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  northflank-deploy:
+    needs: docker-hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Northflank deployment
+        run: |
+          curl --fail-with-body -X POST \
+            "https://api.northflank.com/v1/projects/jetty-db-mongo/services/browser-jet-pilot/deployment" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.NORTHFLANK_API_TOKEN }}" \
+            -d '{"external":{"imagePath":"0xabadbabe/browser-jet-pilot:mcp"},"docker":{"configType":"default"}}'
+
   github-release:
-    needs: [npm-publish, docker-publish]
+    needs: [npm-publish, docker-ghcr, docker-hub]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
