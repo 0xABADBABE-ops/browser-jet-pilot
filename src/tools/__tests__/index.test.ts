@@ -1664,3 +1664,267 @@ describe('browser_switch_tab tool registration', () => {
     })
   })
 })
+
+// ---------------------------------------------------------------------------
+// EX CDP Tools Integration
+// ---------------------------------------------------------------------------
+
+describe('EX CDP tools (--capabilities cdp)', () => {
+  let mockServer: McpServer
+  let registeredTools: Map<string, any>
+  let mockSessionManager: any
+  let mockConfig: ServerConfig
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    registeredTools = new Map()
+
+    mockServer = {
+      registerTool: vi.fn(
+        (name: string, _config: any, handler: any) => {
+          registeredTools.set(name, { config: _config, handler })
+        }
+      ),
+    } as unknown as McpServer
+
+    const storage: Record<string, string | null> = {}
+
+    mockSessionManager = {
+      getDefaultSession: vi.fn().mockReturnValue({
+        id: 'test-session',
+        page: {
+          evaluate: vi.fn((fn: string, arg?: unknown) => {
+            const fnBody = fn.replace(/^\(function\([^)]*\)\s*\{|\}$/g, '')
+            // Simulate localStorage operations
+            if (fnBody.includes('localStorage.getItem')) {
+              return storage[arg as string] ?? null
+            }
+            if (fnBody.includes('localStorage.setItem')) {
+              const [k, v] = arg as string[]
+              storage[k] = v
+              return undefined
+            }
+            if (fnBody.includes('localStorage.key')) {
+              const keys = Object.keys(storage)
+              const outerI = (fnBody.match(/var i = (\d+)/) || [])[1]
+              if (outerI === '0' && keys.length > 0) {
+                // list operation
+                const result: Record<string, string | null> = {}
+                for (const k of keys) result[k] = storage[k]
+                return result
+              }
+            }
+            return null
+          }),
+          url: vi.fn().mockReturnValue('https://example.com'),
+          context: vi.fn().mockReturnValue({
+            newCDPSession: vi.fn().mockResolvedValue({
+              send: vi.fn().mockResolvedValue({}),
+            }),
+          }),
+          goto: vi.fn().mockResolvedValue(undefined),
+          content: vi.fn().mockResolvedValue('<html></html>'),
+          newPage: vi.fn().mockResolvedValue({
+            evaluate: vi.fn().mockResolvedValue(null),
+            url: vi.fn().mockReturnValue('https://new.com'),
+            context: vi.fn().mockReturnValue({
+              newCDPSession: vi.fn().mockResolvedValue({
+                send: vi.fn().mockResolvedValue({}),
+              }),
+            }),
+            goto: vi.fn().mockResolvedValue(undefined),
+            content: vi.fn().mockResolvedValue('<html></html>'),
+            newPage: vi.fn().mockResolvedValue({
+              evaluate: vi.fn().mockResolvedValue(null),
+              url: vi.fn().mockReturnValue('about:blank'),
+              context: vi.fn().mockReturnValue({
+                newCDPSession: vi.fn().mockResolvedValue({
+                  send: vi.fn().mockResolvedValue({}),
+                }),
+              }),
+              goto: vi.fn().mockResolvedValue(undefined),
+              content: vi.fn().mockResolvedValue('<html></html>'),
+              newPage: vi.fn(),
+              close: vi.fn().mockResolvedValue(undefined),
+              screenshot: vi.fn().mockResolvedValue(
+                Buffer.from('fake-png')
+              ),
+            }),
+            close: vi.fn().mockResolvedValue(undefined),
+            screenshot: vi.fn().mockResolvedValue(Buffer.from('fake-png')),
+          }),
+          close: vi.fn().mockResolvedValue(undefined),
+          screenshot: vi.fn().mockResolvedValue(Buffer.from('fake-png')),
+        },
+      }),
+    }
+
+    mockConfig = makeTestConfig({ capabilities: 'cdp' })
+  })
+
+  it('registers all 10 CDP tools', () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    const expectedTools = [
+      'browser_storage_get',
+      'browser_storage_set',
+      'browser_storage_list',
+      'browser_session_storage_get',
+      'browser_session_storage_set',
+      'browser_network_start',
+      'browser_network_stop',
+      'browser_network_replay',
+      'browser_network_route',
+      'browser_network_unroute',
+      'browser_extract_structured',
+      'browser_scrape_parallel',
+    ]
+
+    for (const name of expectedTools) {
+      expect(registeredTools.has(name)).toBe(true)
+    }
+  })
+
+  it('does NOT register CDP tools without --capabilities cdp', () => {
+    registerAllTools(
+      mockServer,
+      mockSessionManager,
+      makeTestConfig()
+    )
+
+    expect(registeredTools.has('browser_storage_get')).toBe(false)
+    expect(registeredTools.has('browser_storage_set')).toBe(false)
+  })
+
+  it('browser_storage_set + browser_storage_get round-trip', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    const setTool = registeredTools.get('browser_storage_set')
+    const getTool = registeredTools.get('browser_storage_get')
+
+    // Set
+    const setResult = await setTool.handler({
+      key: 'test_token',
+      value: 'abc123',
+    })
+    expect(setResult.isError).toBeFalsy()
+    expect(setResult.content[0].text).toContain('test_token')
+
+    // Get
+    const getResult = await getTool.handler({ key: 'test_token' })
+    expect(getResult.isError).toBeFalsy()
+    expect(getResult.content[0].text).toContain('test_token')
+    expect(getResult.content[0].text).toContain('abc123')
+  })
+
+  it('browser_storage_get returns null for missing key', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    const getTool = registeredTools.get('browser_storage_get')
+    const result = await getTool.handler({ key: 'nonexistent' })
+    expect(result.isError).toBeFalsy()
+    expect(result.content[0].text).toContain('null')
+  })
+
+  it('browser_storage_list returns all keys', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    // Override evaluate to handle the list call's string-form function
+    mockSessionManager
+      .getDefaultSession()
+      .page.evaluate.mockResolvedValue({})
+
+    const listTool = registeredTools.get('browser_storage_list')
+    const result = await listTool.handler({})
+    expect(result.isError).toBeFalsy()
+    expect(result.content[0].text).toContain('count')
+  })
+
+  it('browser_session_storage round-trip', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    const setTool = registeredTools.get('browser_session_storage_set')
+    const getTool = registeredTools.get('browser_session_storage_get')
+
+    await setTool.handler({ key: 'session_key', value: 'temp' })
+    const result = await getTool.handler({ key: 'session_key' })
+    expect(result.content[0].text).toContain('session_key')
+  })
+
+  it('browser_extract_structured returns results', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    // Override evaluate to return mock DOM
+    mockSessionManager.getDefaultSession().page.evaluate = vi
+      .fn()
+      .mockResolvedValue([{ title: 'Hello', price: 42 }])
+
+    const tool = registeredTools.get('browser_extract_structured')
+    const result = await tool.handler({
+      schema: {
+        title: { selector: 'h1' },
+        price: { selector: '.price', transform: 'number' },
+      },
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(result.content[0].text).toContain('title')
+    expect(result.content[0].text).toContain('42')
+  })
+
+  it('browser_network_start + stop round-trip', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    // Override evaluate to return what network_start needs
+    mockSessionManager
+      .getDefaultSession()
+      .page.evaluate.mockImplementation((fn: string) => {
+        if (
+          fn.includes('__bjp_network_recorder') &&
+          fn.includes('window.fetch = function')
+        ) {
+          return undefined // start
+        }
+        if (fn.includes('!!window[')) return false // not recording check
+        if (fn.includes('delete window[KEY]')) return [] // stop
+        return null
+      })
+
+    const startTool = registeredTools.get('browser_network_start')
+    const stopTool = registeredTools.get('browser_network_stop')
+
+    const startResult = await startTool.handler({ label: 'test' })
+    expect(startResult.isError).toBeFalsy()
+    expect(startResult.content[0].text).toContain('Recording')
+
+    const stopResult = await stopTool.handler({})
+    expect(stopResult.isError).toBeFalsy()
+  })
+
+  it('browser_network_replay succeeds with empty requests', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    // Override evaluate for replay — return empty results
+    mockSessionManager
+      .getDefaultSession()
+      .page.evaluate.mockResolvedValue([])
+
+    const tool = registeredTools.get('browser_network_replay')
+    const result = await tool.handler({ requests: [] })
+    expect(result.isError).toBeFalsy()
+    expect(result.content[0].text).toContain('success')
+    expect(result.content[0].text).toContain('"total":0')
+  })
+
+  it('browser_network_route blocks matching URLs', async () => {
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    const tool = registeredTools.get('browser_network_route')
+    const result = await tool.handler({
+      urlPattern: 'google-analytics',
+      action: 'block',
+    })
+    expect(result.isError).toBeFalsy()
+    expect(result.content[0].text).toContain('routed')
+  })
+})
