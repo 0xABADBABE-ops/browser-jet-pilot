@@ -8,6 +8,7 @@ This document defines the coding style standards for the browser-jet-pilot proje
 2. **Consistency**: All code should follow the same style patterns
 3. **Documentation**: Public functions must have descriptive comments
 4. **Type Safety**: Leverage TypeScript's type system fully
+5. **Teach**: Teach through comments. 1-2 sentence long where reasonable
 
 ## Formatting Standards
 
