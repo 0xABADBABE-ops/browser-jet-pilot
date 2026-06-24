@@ -71,6 +71,7 @@ docker-compose.override.yml
 
 # Reasonix / AI agent local config
 .reasonix/
+reasonix.toml
 
 # Development scripts & tooling (local only)
 .scripts/

@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import dotenv from 'dotenv'
-import { ServerConfig } from './types.js'
-
-dotenv.config()
+import type { ServerConfig } from './types.js'
 
 const configSchema = z.object({
   cdpUrl: z.string().default('http://localhost:9222'),
@@ -11,9 +8,15 @@ const configSchema = z.object({
   browserHeight: z.coerce.number().default(720),
   port: z.coerce.number().nullable().default(null),
   host: z.string().default('localhost'),
-  apiKey: z.string().optional(),
+  apiKey: z.string().min(8, 'API key must be at least 8 characters').optional(),
+  webdavApiKey: z
+    .string()
+    .min(8, 'WebDAV API key must be at least 8 characters')
+    .optional(),
+  allowEvaluate: z.coerce.boolean().default(false),
   ignoreHTTPSErrors: z.boolean().default(false),
   noSandbox: z.boolean().default(false),
+  corsOrigin: z.string().optional(),
 })
 
 export function resolveConfig(
@@ -27,8 +30,11 @@ export function resolveConfig(
     port: process.env.PORT || null,
     host: process.env.HOST,
     apiKey: process.env.API_KEY,
+    webdavApiKey: process.env.WEBDAV_API_KEY,
+    allowEvaluate: process.env.ALLOW_EVALUATE === 'true',
     ignoreHTTPSErrors: process.env.BROWSER_IGNORE_HTTPS_ERRORS === 'true',
     noSandbox: process.env.BROWSER_NO_SANDBOX === 'true',
+    corsOrigin: process.env.CORS_ORIGIN,
   })
 
   return { ...env, ...overrides }

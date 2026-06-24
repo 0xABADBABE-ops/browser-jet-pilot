@@ -3,6 +3,22 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { registerAllTools } from '../index.js'
 import type { ServerConfig } from '../../types.js'
 
+/** Shared test config factory — reduces duplication across ~20 describe blocks. */
+function makeTestConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
+  return {
+    cdpUrl: 'http://localhost:9222',
+    launch: false,
+    browserWidth: 1920,
+    browserHeight: 1080,
+    port: 3100,
+    host: 'localhost',
+    allowEvaluate: false,
+    ignoreHTTPSErrors: false,
+    noSandbox: false,
+    ...overrides,
+  }
+}
+
 describe('browser_navigate tool registration', () => {
   let mockServer: McpServer
   let mockSessionManager: any
@@ -37,16 +53,7 @@ describe('browser_navigate tool registration', () => {
       }),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_navigate tool with correct schema', () => {
@@ -137,16 +144,7 @@ describe('browser_click tool registration', () => {
       }),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_click tool with selector schema', () => {
@@ -202,16 +200,7 @@ describe('browser_start tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: true,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig({ launch: true })
   })
 
   it('should register browser_start tool', () => {
@@ -279,16 +268,7 @@ describe('browser_end tool registration', () => {
       cleanupSession: vi.fn().mockResolvedValue(undefined),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_end tool', () => {
@@ -349,16 +329,7 @@ describe('browser_get_info tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_get_info tool', () => {
@@ -426,16 +397,7 @@ describe('browser_screenshot tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_screenshot tool with fullPage and selector params', () => {
@@ -571,16 +533,7 @@ describe('browser_fill tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_fill tool with selector and value params', () => {
@@ -650,16 +603,7 @@ describe('browser_type tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_type tool with selector, text, delay params', () => {
@@ -738,16 +682,7 @@ describe('browser_select tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_select tool with selector and value params', () => {
@@ -804,16 +739,7 @@ describe('browser_hover tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_hover tool with selector param', () => {
@@ -869,16 +795,7 @@ describe('browser_scroll tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_scroll tool with direction, amount, selector params', () => {
@@ -1025,16 +942,7 @@ describe('browser_evaluate tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_evaluate tool with script param', () => {
@@ -1052,6 +960,7 @@ describe('browser_evaluate tool registration', () => {
   })
 
   it('should execute JS and return string result', async () => {
+    mockConfig.allowEvaluate = true
     const mockEvaluate = vi.fn().mockResolvedValue('Hello World')
     mockSessionManager.getDefaultSession.mockReturnValue({
       page: { evaluate: mockEvaluate },
@@ -1071,6 +980,7 @@ describe('browser_evaluate tool registration', () => {
   })
 
   it('should stringify object result', async () => {
+    mockConfig.allowEvaluate = true
     mockSessionManager.getDefaultSession.mockReturnValue({
       page: { evaluate: vi.fn().mockResolvedValue({ a: 1, b: 2 }) },
     })
@@ -1085,7 +995,24 @@ describe('browser_evaluate tool registration', () => {
     expect(parsed).toEqual({ a: 1, b: 2 })
   })
 
-  it('should throw when no session exists', async () => {
+  it('should return error when allowEvaluate is disabled', async () => {
+    mockConfig.allowEvaluate = false
+    mockSessionManager.getDefaultSession.mockReturnValue({
+      page: { evaluate: vi.fn() },
+    })
+    registerAllTools(mockServer, mockSessionManager, mockConfig)
+
+    const calls = (mockServer.registerTool as any).mock.calls
+    const evalCall = calls.find((call: any[]) => call[0] === 'browser_evaluate')
+    const handler = evalCall[2]
+
+    const result = await handler({ script: '() => 1' })
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain('browser_evaluate is disabled')
+  })
+
+  it('should return error when no session exists', async () => {
+    mockConfig.allowEvaluate = true
     mockSessionManager.getDefaultSession.mockReturnValue(undefined)
     registerAllTools(mockServer, mockSessionManager, mockConfig)
 
@@ -1115,16 +1042,7 @@ describe('browser_get_content tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_get_content tool with type and selector params', () => {
@@ -1238,16 +1156,7 @@ describe('browser_disable_shaders tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_disable_shaders tool', () => {
@@ -1328,16 +1237,7 @@ describe('browser_restore_shaders tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_restore_shaders tool', () => {
@@ -1394,16 +1294,7 @@ describe('browser_wait_for tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_wait_for tool with selector, state, timeout params', () => {
@@ -1478,16 +1369,7 @@ describe('browser_new_tab tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_new_tab tool with url param', () => {
@@ -1584,16 +1466,7 @@ describe('browser_list_tabs tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_list_tabs tool', () => {
@@ -1659,16 +1532,7 @@ describe('browser_switch_tab tool registration', () => {
       getDefaultSession: vi.fn(),
     }
 
-    mockConfig = {
-      cdpUrl: 'http://localhost:9222',
-      launch: false,
-      browserWidth: 1920,
-      browserHeight: 1080,
-      port: 3100,
-      host: 'localhost',
-      ignoreHTTPSErrors: false,
-      noSandbox: false,
-    }
+    mockConfig = makeTestConfig()
   })
 
   it('should register browser_switch_tab tool with index param', () => {

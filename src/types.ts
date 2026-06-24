@@ -48,8 +48,11 @@ export interface ServerConfig {
   port: number | null
   host: string
   apiKey?: string
+  webdavApiKey?: string
+  allowEvaluate: boolean
   ignoreHTTPSErrors: boolean
   noSandbox: boolean
+  corsOrigin?: string
 }
 
 export interface ToolResult {

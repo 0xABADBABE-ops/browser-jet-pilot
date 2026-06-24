@@ -14,6 +14,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { ToolResult } from '../types.js'
+import {
+  resolveProvider,
+  type LLMProvider,
+  type LLMTool,
+} from './LLMProvider.js'
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -44,39 +49,6 @@ interface ToolDef {
   inputSchema?: Record<string, unknown>
 }
 
-// OpenAI/Anthropic tool schema formats
-interface OpenAIToolSchema {
-  type: 'function'
-  function: {
-    name: string
-    description?: string
-    parameters?: Record<string, unknown>
-  }
-}
-
-interface AnthropicToolSchema {
-  name: string
-  description?: string
-  input_schema: Record<string, unknown>
-}
-
-// Anthropic API response content block types
-interface AnthropicTextContentBlock {
-  type: 'text'
-  text: string
-}
-
-interface AnthropicToolUseContentBlock {
-  type: 'tool_use'
-  id: string
-  name: string
-  input: Record<string, unknown>
-}
-
-type AnthropicContentBlock =
-  | AnthropicTextContentBlock
-  | AnthropicToolUseContentBlock
-
 export interface StepLog {
   step: number
   tool: string
@@ -100,12 +72,18 @@ export class BrowserAgent {
   private transport: StdioClientTransport | StreamableHTTPClientTransport
   private config: Required<Pick<BrowserAgentConfig, 'maxSteps'>> &
     BrowserAgentConfig
+  private llmProvider: LLMProvider
   private connected = false
   private tools: ToolDef[] = []
   private systemPrompt = BROWSER_SYSTEM_PROMPT
 
   constructor(config: BrowserAgentConfig = {}) {
     this.config = { maxSteps: 30, ...config }
+
+    this.llmProvider = resolveProvider(
+      this.config.aiProvider ?? 'openai',
+      this.config.aiModel ?? 'gpt-4o'
+    )
 
     this.client = new Client({
       name: 'BrowserAgent',
@@ -320,29 +298,23 @@ export class BrowserAgent {
     done: boolean
     toolCall?: { toolName: string; toolArgs: Record<string, unknown> }
   }> {
-    const provider = this.config.aiProvider ?? 'openai'
-    const apiKey = this.config.aiApiKey ?? process.env.OPENAI_API_KEY
+    const apiKey = this.config.aiApiKey ?? process.env.OPENAI_API_KEY ?? ''
     const model = this.config.aiModel ?? 'gpt-4o'
     const baseUrl = this.config.aiBaseUrl
 
-    // Build tools schema for the LLM
-    const toolsSchema: OpenAIToolSchema[] = this.tools.map((t) => ({
-      type: 'function' as const,
-      function: {
+    // Build the list of tools the LLM can call, plus a "finish"
+    // tool so the model can signal task completion.
+    const tools: LLMTool[] = [
+      ...this.tools.map((t) => ({
         name: t.name,
         description: t.description,
-        parameters: t.inputSchema,
-      },
-    }))
-
-    // Add a "finish" tool so the LLM can signal completion
-    toolsSchema.push({
-      type: 'function',
-      function: {
+        inputSchema: t.inputSchema,
+      })),
+      {
         name: 'finish',
         description:
           'Call this when the browser task is complete. Provide a summary of what was accomplished.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             summary: {
@@ -353,157 +325,13 @@ export class BrowserAgent {
           required: ['summary'],
         },
       },
+    ]
+
+    return this.llmProvider.complete(messages, tools, {
+      apiKey,
+      model,
+      baseUrl,
     })
-
-    if (provider === 'anthropic' || model.includes('claude')) {
-      return this.anthropicCompletion(
-        messages,
-        toolsSchema,
-        apiKey!,
-        model,
-        baseUrl
-      )
-    }
-
-    return this.openaiCompletion(messages, toolsSchema, apiKey!, model, baseUrl)
-  }
-
-  private async openaiCompletion(
-    messages: Array<Record<string, unknown>>,
-    tools: OpenAIToolSchema[],
-    apiKey: string,
-    model: string,
-    baseUrl?: string
-  ): Promise<{
-    content: string
-    done: boolean
-    toolCall?: { toolName: string; toolArgs: Record<string, unknown> }
-  }> {
-    const endpoint = baseUrl ?? 'https://api.openai.com/v1'
-    const res = await fetch(`${endpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        tools,
-        tool_choice: 'auto',
-        max_tokens: 4096,
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      throw new Error(`OpenAI API error ${res.status}: ${err}`)
-    }
-
-    const data = await res.json()
-    const choice = data.choices[0]
-    const msg = choice.message
-
-    // Tool call
-    if (msg.tool_calls && msg.tool_calls.length > 0) {
-      const tc = msg.tool_calls[0]
-      if (tc.function.name === 'finish') {
-        const args = JSON.parse(tc.function.arguments)
-        return { content: args.summary, done: true }
-      }
-      return {
-        content: msg.content ?? '',
-        done: false,
-        toolCall: {
-          toolName: tc.function.name,
-          toolArgs: JSON.parse(tc.function.arguments),
-        },
-      }
-    }
-
-    // No tool call — the model is done or confused
-    return { content: msg.content ?? '', done: true }
-  }
-
-  private async anthropicCompletion(
-    messages: Array<Record<string, unknown>>,
-    tools: OpenAIToolSchema[],
-    apiKey: string,
-    model: string,
-    baseUrl?: string
-  ): Promise<{
-    content: string
-    done: boolean
-    toolCall?: { toolName: string; toolArgs: Record<string, unknown> }
-  }> {
-    // Convert messages format for Anthropic
-    const systemMsg = messages.find((m) => m.role === 'system')
-    const chatMsgs = messages
-      .filter((m) => m.role !== 'system')
-      .map((m) => ({
-        role: m.role,
-        content: m.content,
-      }))
-
-    const anthropicTools: AnthropicToolSchema[] = tools.map((t) => ({
-      name: t.function.name,
-      description: t.function.description,
-      input_schema: t.function.parameters ?? {},
-    }))
-
-    const endpoint = baseUrl ?? 'https://api.anthropic.com'
-    const res = await fetch(`${endpoint}/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: systemMsg?.content ?? '',
-        messages: chatMsgs,
-        tools: anthropicTools,
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      throw new Error(`Anthropic API error ${res.status}: ${err}`)
-    }
-
-    const data = await res.json()
-    const content: AnthropicContentBlock[] = data.content ?? []
-
-    // Check for tool use
-    const toolBlock = content.find(
-      (b): b is AnthropicToolUseContentBlock => b.type === 'tool_use'
-    )
-    if (toolBlock) {
-      if (toolBlock.name === 'finish') {
-        const summary =
-          typeof toolBlock.input?.summary === 'string'
-            ? toolBlock.input.summary
-            : ''
-        return { content: summary, done: true }
-      }
-      return {
-        content: '',
-        done: false,
-        toolCall: {
-          toolName: toolBlock.name,
-          toolArgs: toolBlock.input ?? {},
-        },
-      }
-    }
-
-    const text = content
-      .filter((b): b is AnthropicTextContentBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-    return { content: text, done: true }
   }
 }
 

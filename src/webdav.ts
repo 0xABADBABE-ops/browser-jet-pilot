@@ -6,7 +6,7 @@
  * Mount path: /webdav → serves /data on the NVMe volume.
  */
 import { IncomingMessage, ServerResponse } from 'node:http'
-import { resolve, join, relative, basename, dirname } from 'node:path'
+import { resolve, join, relative, isAbsolute, basename, dirname } from 'node:path'
 import { timingSafeEqual } from 'node:crypto'
 import {
   readFile,
@@ -18,23 +18,23 @@ import {
   stat,
   rename,
 } from 'fs/promises'
+import { createWriteStream } from 'node:fs'
 
 const DATA_DIR = resolve('/data')
 const WEBDAV_PREFIX = '/webdav'
 
-/** Map a WebDAV URL path to the filesystem path under /data. */
+/** Map a WebDAV URL path to the filesystem path under /data.
+ *  Uses path.resolve() for canonical path traversal protection —
+ *  isUnderData() below provides the definitive security guard. */
 function toFsPath(urlPath: string): string {
   const rel = relative(WEBDAV_PREFIX, urlPath)
-  const sanitized = rel.replace(/\.\./g, '') // block traversal
-  return resolve(
-    DATA_DIR,
-    sanitized.startsWith('/') ? sanitized.slice(1) : sanitized
-  )
+  return resolve(DATA_DIR, rel.startsWith('/') ? rel.slice(1) : rel)
 }
 
 /** Guard: ensure resolved path stays under /data. */
 function isUnderData(fsPath: string): boolean {
-  return fsPath.startsWith(DATA_DIR)
+  const rel = relative(DATA_DIR, fsPath)
+  return !rel.startsWith('..') && !isAbsolute(rel)
 }
 
 /** Strip /webdav prefix for XML href values. */
@@ -143,16 +143,50 @@ function constantTimeEqual(a: string, b: string): boolean {
   }
 }
 
-async function parseBody(req: IncomingMessage): Promise<Buffer> {
-  const chunks: Buffer[] = []
+/**
+ * Stream a request body to a file, enforcing a size limit.
+ * Writes chunks as they arrive to avoid buffering the entire
+ * upload in memory.
+ */
+async function streamToFile(
+  req: IncomingMessage,
+  destPath: string,
+  maxBytes: number
+): Promise<void> {
+  const dest = createWriteStream(destPath)
   let total = 0
-  const MAX = 500 * 1024 * 1024 // 500MB limit for file uploads
-  for await (const chunk of req) {
-    total += chunk.length
-    if (total > MAX) throw new Error('File too large (max 500MB)')
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+
+  try {
+    for await (const chunk of req) {
+      total += chunk.length
+      if (total > maxBytes) {
+        dest.destroy()
+        throw new Error('File too large')
+      }
+      dest.write(chunk)
+    }
+  } catch (err) {
+    dest.destroy()
+    try {
+      await unlink(destPath)
+    } catch {
+      // file may not exist yet
+    }
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('File too large')) {
+      throw new Error(`File too large (max ${maxBytes / (1024 * 1024)}MB)`, {
+        cause: err,
+      })
+    }
+    throw err
   }
-  return Buffer.concat(chunks)
+
+  return new Promise<void>((resolve, reject) => {
+    dest.end((err: Error | null) => {
+      if (err) reject(err)
+      else resolve()
+    })
+  })
 }
 
 /**
@@ -269,9 +303,8 @@ export async function handleWebdavRequest(
       }
 
       case 'PUT': {
-        const body = await parseBody(req)
         await mkdir(dirname(fsPath), { recursive: true })
-        await writeFile(fsPath, body)
+        await streamToFile(req, fsPath, 100 * 1024 * 1024) // 100MB limit
 
         res.writeHead(201, { 'content-length': '0' })
         res.end()

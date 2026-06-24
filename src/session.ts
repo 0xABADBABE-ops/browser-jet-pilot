@@ -109,8 +109,13 @@ export class SessionManager {
       // Set viewport on connected browser (best-effort)
       try {
         await page.setViewportSize({ width, height })
-      } catch {
-        // ignore if not supported by remote context
+      } catch (err) {
+        // Connected browser may not support viewport changes;
+        // log a warning so operators are aware.
+        console.error(
+          '[browser-jet-pilot] Warning: could not set viewport on',
+          `CDP browser: ${err instanceof Error ? err.message : String(err)}`
+        )
       }
     }
 

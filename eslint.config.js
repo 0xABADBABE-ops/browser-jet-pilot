@@ -27,6 +27,10 @@ export default [
       ...tseslint.configs.strict.rules,
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       'no-console': 'off',
       'no-undef': 'off',
     },

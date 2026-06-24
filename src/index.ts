@@ -1,5 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from 'node:http'
 import { randomUUID, timingSafeEqual } from 'node:crypto'
+import dotenv from 'dotenv'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -8,6 +9,8 @@ import { handleWebdavRequest } from './webdav.js'
 import { resolveConfig } from './config.js'
 import { SessionManager } from './session.js'
 import type { ServerConfig } from './types.js'
+
+dotenv.config()
 
 interface HttpSessionContext {
   server: McpServer
@@ -98,7 +101,18 @@ function isInitializeRequest(body: unknown): boolean {
   )
 }
 
+/**
+ * Parse the request body as JSON. Rejects non-JSON content types
+ * and enforces a 10MB size limit to prevent memory exhaustion.
+ */
 async function parseJsonBody(req: IncomingMessage): Promise<unknown> {
+  const contentType = req.headers['content-type'] ?? ''
+  if (req.method === 'POST' && !contentType.includes('application/json')) {
+    throw new Error(
+      `Unsupported Content-Type: ${contentType}. Only application/json is accepted.`
+    )
+  }
+
   const chunks: Buffer[] = []
   let totalSize = 0
   const MAX_BODY_SIZE = 10 * 1024 * 1024 // 10MB limit to prevent DoS
@@ -128,6 +142,38 @@ function writeJsonRpcError(
 }
 
 /**
+ * Set CORS headers on a response when a CORS_ORIGIN is configured.
+ * Handles preflight OPTIONS requests by returning true.
+ */
+function handleCors(
+  req: IncomingMessage,
+  res: ServerResponse,
+  corsOrigin?: string
+): boolean {
+  if (!corsOrigin) return false
+
+  const origin = corsOrigin === '*' ? '*' : corsOrigin
+  res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, DELETE, OPTIONS, PROPFIND, PUT, MKCOL, MOVE, COPY'
+  )
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, X-API-Key, Mcp-Session-Id, Depth, Destination'
+  )
+  res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id')
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return true
+  }
+
+  return false
+}
+
+/**
  * Handle a single HTTP request for the MCP endpoint.
  * Manages session lifecycle, authentication, and transport routing.
  */
@@ -139,6 +185,9 @@ async function handleHttpRequest(
   sessions: Map<string, HttpSessionContext>
 ): Promise<void> {
   try {
+    // CORS preflight / header injection
+    if (handleCors(req, res, config.corsOrigin)) return
+
     const requestUrl = new URL(
       req.url ?? '/',
       `http://${req.headers.host ?? 'localhost'}`
@@ -156,7 +205,10 @@ async function handleHttpRequest(
     }
 
     // WebDAV: serve /data over the /webdav mount point
-    const webdavHandled = await handleWebdavRequest(req, res, config.apiKey)
+    // Uses WEBDAV_API_KEY if set, falls back to API_KEY for
+    // backward compatibility.
+    const webdavKey = config.webdavApiKey ?? config.apiKey
+    const webdavHandled = await handleWebdavRequest(req, res, webdavKey)
     if (webdavHandled) return
 
     if (requestUrl.pathname !== '/mcp') {

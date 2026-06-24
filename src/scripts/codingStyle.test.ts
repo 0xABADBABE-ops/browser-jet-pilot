@@ -175,15 +175,30 @@ describe('coding style compliance', () => {
 
   describe('error handling standards', () => {
     it('should have descriptive error messages', () => {
-      const filePath = join(projectRoot, 'src/tools/index.ts')
-      const content = readFileSync(filePath, 'utf8')
-
-      // Error messages should be descriptive
-      const errors = content.matchAll(/throw new Error\(['"`]([^'"`]+)['"`]\)/g)
-      const errorMessages = Array.from(errors).map((m) => m[1])
+      // Check shared utils (noSession) and category files
+      const files = [
+        'src/tools/utils.ts',
+        'src/tools/session.ts',
+        'src/tools/navigation.ts',
+        'src/tools/interaction.ts',
+        'src/tools/observation.ts',
+        'src/tools/persistence.ts',
+        'src/tools/tabs.ts',
+        'src/tools/shader.ts',
+      ]
+      const allErrors: string[] = []
+      for (const file of files) {
+        const filePath = join(projectRoot, file)
+        if (!existsSync(filePath)) continue
+        const content = readFileSync(filePath, 'utf8')
+        const errors = content.matchAll(
+          /throw new Error\(['"`]([^'"`]+)['"`]\)/g
+        )
+        for (const m of errors) allErrors.push(m[1])
+      }
 
       // At least one error should have context
-      const contextualErrors = errorMessages.filter(
+      const contextualErrors = allErrors.filter(
         (msg) =>
           msg.length > 10 || msg.includes('not found') || msg.includes('failed')
       )
