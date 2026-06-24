@@ -14,7 +14,7 @@ Browser Jet Pilot is a self-hosted MCP server for browser automation via Playwri
 | ----------------------------------------- | ---------------------------- |
 | `npm run build`                           | Compile TypeScript → `dist/` |
 | `npm run dev`                             | Dev mode with `tsx`          |
-| `npm test`                                | Run 127-test Vitest suite    |
+| `npm test`                                | Run Vitest suite             |
 | `npm run typecheck`                       | `tsc --noEmit`               |
 | `npm run lint` / `npm run lint:fix`       | ESLint                       |
 | `npm run format` / `npm run format:check` | Prettier                     |
@@ -30,9 +30,19 @@ src/index.ts          → Server entry, transport setup, tool registration
 src/config.ts         → Zod-validated env config (CDP_URL, LAUNCH, PORT, API_KEY, ...)
 src/session.ts        → SessionManager — CDP connect or Playwright launch, browser lifecycle
 src/types.ts          → Shared interfaces (BrowserSession, ServerConfig, ToolResult)
-src/tools/index.ts    → All 19 tool registrations with Zod schemas
+src/webdav.ts         → WebDAV handler for session file access
+src/tools/index.ts    → Tool registration hub — wires 26 tools into the MCP server
+src/tools/utils.ts    → Shared helpers (getSession, DATA_DIR, DOWNLOADS_DIR)
+src/tools/session.ts  → browser_start, browser_end
+src/tools/navigation.ts → browser_navigate, browser_get_info
+src/tools/interaction.ts → browser_click, browser_fill, browser_type, browser_select, browser_hover, browser_scroll
+src/tools/observation.ts → browser_screenshot, browser_evaluate, browser_get_content, browser_wait_for
+src/tools/persistence.ts → browser_save_cookies, browser_load_cookies, browser_download, browser_list_data_files, browser_read_data_file, browser_write_data_file, browser_delete_data_file
+src/tools/tabs.ts     → browser_new_tab, browser_list_tabs, browser_switch_tab
+src/tools/shader.ts   → browser_disable_shaders, browser_restore_shaders
 src/agent/            → BrowserAgent (AI loop) + CLI
 src/skill/            → BrowserSkill (framework integration) + manifest JSON
+src/scripts/          → Self-test scripts for coding style, formatting, linting, typecheck
 docs/                 → Mintlify documentation (docs.json is the nav config)
 ```
 
@@ -42,7 +52,7 @@ docs/                 → Mintlify documentation (docs.json is the nav config)
 - **No semicolons, single quotes, 80-char lines** — Prettier enforced
 - **Zod v4** for all schema validation (config, tool parameters)
 - **`@modelcontextprotocol/sdk`** — tools registered via `server.registerTool(name, { inputSchema: zodSchema, handler })`
-- **HTTP transport** — `StreamableHTTPServerTransport` → `getRequestListener()` mounted on `http.createServer()`
+- **HTTP transport** — `StreamableHTTPServerTransport` used directly via `transport.handleRequest(req, res, body)` inside `http.createServer()`
 - **Error returns** — tools return `{ content: [{ type: 'text', text: errorMessage }], isError: true }`
 - **No `any`** — use `unknown` or proper types. Type-only imports: `import type { X } from '...'`
 
@@ -63,7 +73,7 @@ docs/                 → Mintlify documentation (docs.json is the nav config)
 - Framework: Vitest v4
 - Config: `vitest.config.ts`
 - Co-locate tests with source (`*.test.ts`) or use `__tests__/` dirs
-- 127 existing tests — run `npm test` to verify nothing broke
+- 144+ tests — run `npm test` to verify nothing broke
 - Coverage: `npm run test:coverage`
 
 ## Documentation

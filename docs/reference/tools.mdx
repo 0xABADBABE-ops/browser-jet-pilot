@@ -270,6 +270,182 @@ browser_scroll?direction=top
 browser_scroll?direction=bottom&selector=#sidebar
 ```
 
+## Persistence and storage
+
+### browser_save_cookies
+
+Save all browser cookies for the current domain to persistent storage at `/data/cookies.json`. Use for session persistence across browser restarts.
+
+**Parameters:**
+- `filename` (string, optional): Filename under `/data/` (default: `"cookies.json"`). Use different names to maintain multiple cookie jars.
+
+**Returns:**
+```json
+{
+  "saved": 5,
+  "path": "/data/cookies.json",
+  "message": "5 cookies saved to /data/cookies.json"
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- File write error (permissions, disk full)
+
+**Example:**
+```bash
+browser_save_cookies?filename=cookies.json
+```
+
+### browser_load_cookies
+
+Load cookies from persistent storage and inject them into the current browser context. Useful for restoring authenticated sessions.
+
+**Parameters:**
+- `filename` (string, optional): Filename under `/data/` (default: `"cookies.json"`). Must have been previously saved with `browser_save_cookies`.
+
+**Returns:**
+```json
+{
+  "loaded": 5,
+  "path": "/data/cookies.json",
+  "message": "5 cookies loaded from /data/cookies.json"
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- File not found (cookie file doesn't exist)
+- Invalid JSON (cookie file is corrupted)
+
+**Example:**
+```bash
+browser_load_cookies?filename=cookies.json
+```
+
+### browser_download
+
+Download a file from a URL to the persistent `/data/downloads/` directory. Returns the local file path.
+
+**Parameters:**
+- `url` (string, required): URL of the file to download
+- `filename` (string, optional): Name to save the file as (default: derived from URL). Saved under `/data/downloads/`.
+
+**Returns:**
+```json
+{
+  "path": "/data/downloads/report.pdf",
+  "size": 102400,
+  "type": "application/pdf",
+  "message": "Downloaded 102400 bytes to /data/downloads/report.pdf"
+}
+```
+
+**Errors:**
+- No active session (error: `"No active session. Call browser_start first."`)
+- Download failure (HTTP error, network issue)
+
+**Example:**
+```bash
+browser_download?url=https://example.com/report.pdf&filename=report.pdf
+```
+
+### browser_list_data_files
+
+List all files and directories on the persistent volume at `/data/`. Useful for inspecting previously saved cookies, downloads, and written files.
+
+**Parameters:**
+- `subdir` (string, optional): Subdirectory under `/data/` to list (default: root of `/data/`)
+
+**Returns:**
+```json
+{
+  "path": "/data/",
+  "entries": [
+    { "name": "cookies.json", "type": "file" },
+    { "name": "downloads", "type": "directory" }
+  ]
+}
+```
+
+**Errors:**
+- File system errors (permissions, non-existent path)
+
+**Example:**
+```bash
+browser_list_data_files?subdir=downloads
+```
+
+### browser_read_data_file
+
+Read a file from the persistent `/data/` directory. Returns the content as a string. Truncates content to 100,000 characters if too large.
+
+**Parameters:**
+- `path` (string, required): Path relative to `/data/`. E.g. `"downloads/report.pdf"` reads `/data/downloads/report.pdf`.
+- `encoding` (string, optional): Encoding to read the file as (default: `"utf-8"` for text, use `"base64"` for binary)
+
+**Returns:** File content as text (truncated to 100,000 characters)
+
+**Errors:**
+- Path traversal detected (path escapes `/data/`)
+- File not found
+
+**Example:**
+```bash
+browser_read_data_file?path=downloads/page.html
+```
+
+### browser_write_data_file
+
+Write content to a file in the persistent `/data/` directory. Creates parent directories as needed.
+
+**Parameters:**
+- `path` (string, required): Path relative to `/data/`. E.g. `"notes/scrape.txt"`.
+- `content` (string, required): Text content to write to the file.
+- `encoding` (string, optional): Encoding for the content (default: `"utf-8"`). Use `"base64"` if content is base64-encoded binary data.
+
+**Returns:**
+```json
+{
+  "path": "/data/notes/scrape.txt",
+  "size": 1024,
+  "message": "Written 1024 chars to /data/notes/scrape.txt"
+}
+```
+
+**Errors:**
+- Path traversal detected (path escapes `/data/`)
+- File write error (permissions, disk full)
+
+**Example:**
+```bash
+browser_write_data_file?path=notes/scrape.txt&content=Hello+World
+```
+
+### browser_delete_data_file
+
+Delete a file from the persistent `/data/` directory.
+
+**Parameters:**
+- `path` (string, required): Path to the file relative to `/data/`. E.g. `"cookies.json"` or `"downloads/old.zip"`.
+
+**Returns:**
+```json
+{
+  "deleted": "/data/cookies.json",
+  "message": "Deleted /data/cookies.json"
+}
+```
+
+**Errors:**
+- Path traversal detected (path escapes `/data/`)
+- File not found
+
+**Example:**
+```bash
+browser_delete_data_file?path=cookies.json
+```
+
 ## Observation and extraction
 
 ### browser_screenshot

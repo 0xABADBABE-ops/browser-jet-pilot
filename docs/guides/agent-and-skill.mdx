@@ -11,7 +11,7 @@ keywords: ["BrowserAgent", "BrowserSkill", "agent integration", "MCP client"]
 Use `BrowserAgent` when you want natural-language tasks with optional LLM planning and tool execution.
 
 ```ts
-import { BrowserAgent } from 'mcp-browser-server/agent';
+import { BrowserAgent } from 'browser-jet-pilot/agent';
 
 const agent = new BrowserAgent({
   serverUrl: 'http://localhost:3100/mcp',
@@ -29,7 +29,7 @@ await agent.disconnect();
 Use `BrowserSkill` when your framework expects a stable skill interface and file outputs.
 
 ```ts
-import { BrowserSkill } from 'mcp-browser-server/skill';
+import { BrowserSkill } from 'browser-jet-pilot/skill';
 
 const skill = new BrowserSkill({
   serverUrl: 'http://localhost:3100/mcp',

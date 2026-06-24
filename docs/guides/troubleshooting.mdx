@@ -1,0 +1,142 @@
+---
+title: "Troubleshooting"
+description: "Common issues and solutions when running Browser Jet Pilot."
+keywords: ["troubleshooting", "debugging", "errors", "faq"]
+---
+
+## Server health
+
+### `curl healthz` fails
+
+If `curl http://localhost:3100/healthz` fails or returns an error:
+
+- **Check if the server is running**: Verify `node dist/index.js` is active and not crashed
+- **Verify port**: Ensure port 3100 is not already in use by another process
+- **Check host binding**: If connecting from another machine, use `--host 0.0.0.0` instead of `localhost`
+- **Build output**: Make sure you've run `npm run build` and the `dist/` directory exists
+
+## Session lifecycle
+
+### `browser_start` fails
+
+If `browser_start` or any browser tool fails:
+
+- **Missing dependencies**: Ensure Chromium is installed. The server downloads it on first use, which may take time
+- **Insufficient resources**: Check available memory and disk space (Chromium needs ~300MB)
+- **Display issues (Linux)**: If running headless without a display, ensure XVFB or similar is configured
+- **Previous browser instance**: A browser may already be running. Call `browser_end` first to clean up
+- **LAUNCH mode**: If `LAUNCH=true` is set, make sure Playwright browsers are installed (`npx playwright install chromium`)
+
+### `browser_end` says "No active session to close"
+
+This is not an error. It means no session was running. Call `browser_start` to begin a new session.
+
+### Session lost after long idle
+
+Browser sessions may time out. Call `browser_start` again to create a new session. To persist authentication, use `browser_save_cookies` before the session ends and `browser_load_cookies` after restarting.
+
+## Tool invocation errors
+
+### Tool calls return errors
+
+If MCP tool calls return errors to your client:
+
+- **Transport mismatch**: Ensure your client uses the correct URL path (`/mcp` for HTTP mode)
+- **Timeouts**: Increase timeout values if browser operations take longer than expected
+- **Malformed requests**: Verify tool names and parameters match the schema in [/reference/tools](/reference/tools)
+- **Server logs**: Check server output for detailed error messages and stack traces
+
+### "No active session. Call browser_start first."
+
+Every browser operation except `browser_start` requires an active session. Ensure your sequence starts with `browser_start`.
+
+### Element not found errors
+
+- **Timing**: The page may not have finished loading. Use `browser_wait_for` before interacting with elements
+- **Selector**: Verify your CSS selector is correct. Use `browser_get_content?type=html` to inspect the actual DOM
+- **iframe**: Elements inside iframes are not reachable with standard selectors. Navigate directly to the iframe's URL instead
+
+### Navigation timeout after 30 seconds
+
+- **Slow page**: The target page may be heavy. Retry or use a lighter alternative
+- **Network issues**: Check that the server has internet access
+- **Redirect loops**: The URL may be redirecting indefinitely
+
+## Network and connectivity
+
+### Port conflicts
+
+If you see "port already in use" errors:
+
+```bash
+# Find and kill the process on port 3100 (Windows)
+netstat -ano | findstr :3100
+taskkill /PID <PID> /F
+
+# Find and kill the process on port 3100 (macOS/Linux)
+lsof -ti:3100 | xargs kill -9
+```
+
+Or choose a different port:
+
+```bash
+node dist/index.js --port 3101 --host 0.0.0.0
+```
+
+### CDP connection issues
+
+If connecting to an external CDP endpoint fails:
+
+- **CDP endpoint availability**: Verify the remote browser is running with `--remote-debugging-port=9222`
+- **Network accessibility**: Ensure the CDP URL is reachable from the server's network
+- **Wrong CDP URL**: Check that `CDP_URL` includes the correct host (not `localhost` if running in Docker)
+- **Firewall**: Confirm ports 9222 and related ports are not blocked
+
+### API key authentication fails (401)
+
+- **Missing key**: Set `API_KEY` in your `.env` file and include it as `X-API-Key` header
+- **Wrong header**: The header name is case-sensitive: `X-API-Key`
+- **HTTP vs stdio**: API key auth only applies to HTTP mode; stdio mode does not use it
+
+## Docker-specific issues
+
+### Container can't reach CDP on localhost
+
+When running in Docker with an external Chromium on the host machine, `localhost` refers to the container, not the host. Use `host.docker.internal` instead:
+
+```yaml
+environment:
+  CDP_URL: "http://host.docker.internal:9222"
+```
+
+### Data persistence between container restarts
+
+Mount a volume for `/data` to persist cookies, downloads, and written files:
+
+```yaml
+volumes:
+  - ./data:/data
+```
+
+## Performance
+
+### Page feels slow or unresponsive
+
+- **Heavy shaders**: Call `browser_disable_shaders` before navigating to WebGL-heavy pages
+- **Large pages**: Use `browser_get_content?selector=...` to scope extraction instead of full-page reads
+- **Memory pressure**: Call `browser_end` periodically to release resources between workflows
+
+### High memory usage
+
+- Browser processes naturally consume memory (~300-500MB per instance). If memory is a concern:
+  - End sessions when done with `browser_end`
+  - Avoid keeping many tabs open simultaneously
+  - Use a single session sequentially rather than multiple concurrent sessions
+
+## Getting help
+
+If you can't resolve an issue:
+
+- Check the [reliability checks guide](/guides/reliability-checks) for systematic validation
+- Review [configuration reference](/reference/configuration) for correct environment setup
+- File an issue on [GitHub](https://github.com/0xABADBABE-ops/browser-jet-pilot/issues)

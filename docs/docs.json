@@ -49,7 +49,7 @@
       },
       {
         "group": "Guides",
-        "pages": ["guides/integrations", "guides/agent-and-skill", "guides/reliability-checks"]
+        "pages": ["guides/integrations", "guides/agent-and-skill", "guides/reliability-checks", "guides/troubleshooting"]
       },
       {
         "group": "Reference",
@@ -57,7 +57,7 @@
       },
       {
         "group": "Development",
-        "pages": ["development/testing", "development/linting", "development/contributing"]
+        "pages": ["development/testing", "development/linting", "development/coding-style", "development/contributing"]
       }
     ]
   },
