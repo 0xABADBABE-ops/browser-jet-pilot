@@ -202,9 +202,8 @@ export async function handleWebdavRequest(
 
       case 'PROPFIND': {
         const depth = req.headers['depth'] ?? '0'
-        let statInfo: { isDirectory: () => boolean }
         try {
-          statInfo = await stat(fsPath)
+          await stat(fsPath)
         } catch {
           res.writeHead(404)
           res.end('Not Found')
