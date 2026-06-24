@@ -13,7 +13,7 @@ FROM mcr.microsoft.com/playwright:v1.61.0-jammy@sha256:264136758e43332108f6420f8
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 RUN npx playwright install chromium
 
 COPY --from=builder /app/dist ./dist
